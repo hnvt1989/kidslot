@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const winSound = document.getElementById('win-sound');
     const bgm = document.getElementById('bgm');
     const confettiContainer = document.getElementById('confetti-container');
-    const winBanner = document.getElementById('win-banner');
     
     // Array of items for the slot machine
     const items = [
@@ -35,9 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
             slot.textContent = randomItem.emoji;
             currentItems[index] = randomItem;
         });
-        
-        // Make sure win banner is hidden on start
-        winBanner.classList.add('hidden');
         
         // Clear any previous confetti
         confettiContainer.classList.add('hidden');
@@ -89,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
         spinButton.disabled = true;
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
-        winBanner.classList.add('hidden');
         
         // Play spin sound (if available)
         if (spinSound && spinSound.play) {
@@ -178,14 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show confetti
         createConfetti();
         
-        // Show win banner
-        winBanner.classList.remove('hidden');
-        
-        // Hide win banner after 3 seconds
-        setTimeout(() => {
-            winBanner.classList.add('hidden');
-        }, 3000);
-        
         // Add jackpot speech after a short delay
         setTimeout(() => {
             const congratsText = `Wow! You got three ${currentItems[0].name}s! Amazing job!`;
@@ -245,7 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
         spinButton.disabled = false;
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
-        winBanner.classList.add('hidden');
         
         // Set new random items
         slots.forEach((slot, index) => {

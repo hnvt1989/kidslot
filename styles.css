@@ -124,47 +124,6 @@ button:active {
     display: none;
 }
 
-/* Win Banner */
-#win-banner {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    pointer-events: none;
-}
-
-.win-banner-content {
-    background: linear-gradient(45deg, #FFC107, #FF5722);
-    border-radius: 20px;
-    padding: 2rem 4rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    text-align: center;
-    animation: bounce 0.5s ease infinite alternate;
-    border: 8px solid white;
-}
-
-.win-banner-content h2 {
-    color: white;
-    font-size: 3.5rem;
-    margin-bottom: 0.5rem;
-    text-shadow: 3px 3px 0 #4EA8DE;
-}
-
-.win-banner-content p {
-    color: white;
-    font-size: 2rem;
-    text-shadow: 2px 2px 0 #4EA8DE;
-}
-
-@keyframes bounce {
-    from { transform: scale(1); }
-    to { transform: scale(1.05); }
-}
 
 /* Media queries for responsiveness */
 @media (max-width: 768px) {
@@ -192,15 +151,4 @@ button:active {
         font-size: 1.25rem;
     }
     
-    .win-banner-content {
-        padding: 1.5rem 2.5rem;
-    }
-    
-    .win-banner-content h2 {
-        font-size: 2.5rem;
-    }
-    
-    .win-banner-content p {
-        font-size: 1.5rem;
-    }
 }
