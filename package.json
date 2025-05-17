@@ -4,7 +4,11 @@
   "description": "A fun and colorful slot machine game designed for kids",
   "main": "index.html",
   "scripts": {
-    "build": "echo 'Static site, no build needed'",
-    "vercel-build": "echo 'Static site, no build needed'"
+    "build": "./build.sh",
+    "vercel-build": "./build.sh",
+    "start": "npx serve dist"
+  },
+  "devDependencies": {
+    "serve": "^14.0.0"
   }
 }

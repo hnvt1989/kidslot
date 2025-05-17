@@ -1,0 +1,6 @@
+# Ignore unnecessary files
+.git
+.gitignore
+README.md
+VERCEL_DEPLOYMENT.md
+server.js

@@ -1,30 +1,22 @@
-# Simple Vercel Deployment Guide
+# Vercel Deployment Guide - Specific Instructions
 
-Follow these steps to deploy the Kids Slot Machine game to Vercel.
+## IMPORTANT: Follow these exact steps to deploy successfully
 
-## Deploy with Vercel Dashboard (Recommended)
+### Method 1: Deploy using the Vercel Web Interface
 
-1. Sign up or log in to [Vercel](https://vercel.com)
-
-2. Click "New Project" in the Vercel dashboard
-
-3. Import your Git repository or upload your files directly
-   - If importing from Git, connect your GitHub/GitLab/Bitbucket account
-   - If uploading, drag and drop your project folder or use the file selection dialog
-
-4. Configure project settings:
-   - **Framework Preset**: "Other" or "Static Site"
-   - **Build Command**: Leave empty
-   - **Output Directory**: Leave empty
-   - **Root Directory**: Leave as "/"
-
+1. Go to [Vercel](https://vercel.com) and log in or create an account
+2. Click "Add New..." → "Project"
+3. Import your Git repository or upload files directly
+4. In the project configuration page:
+   - Framework Preset: Select "Other"
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+   - Install Command: `npm install` (default)
 5. Click "Deploy"
 
-## Deploy with Vercel CLI
+### Method 2: Deploy with Vercel CLI (Recommended)
 
-Alternatively, you can use the Vercel CLI:
-
-1. Install Vercel CLI:
+1. Install Vercel CLI globally:
    ```
    npm install -g vercel
    ```
@@ -34,30 +26,52 @@ Alternatively, you can use the Vercel CLI:
    vercel
    ```
 
-3. Follow the prompts to complete deployment
+3. Answer the prompts:
+   - Set up and deploy: Yes
+   - Which scope: Select your account
+   - Link to existing project: No
+   - Project name: Enter your project name or accept default
+   - Directory: ./ (current directory)
+   - Override settings: Yes
+   - Build Command: npm run build
+   - Output Directory: dist
+   - Development Command: npm start
 
-## Important Notes
+### Method 3: Simple Deploy (Easiest)
 
-1. Access your deployed site at the URL provided by Vercel
-   - Use the domain without adding `/index.html` (e.g., `https://kidslot.vercel.app/`)
+If the above methods don't work, try this simplified approach:
 
-2. Add sound files to your repository before deploying for the best experience:
-   - `sounds/spin.mp3`
-   - `sounds/win.mp3`
-   - `sounds/background.mp3`
+1. In your project directory, run:
+   ```
+   npx vercel --prod
+   ```
 
-3. The game is designed to function even without sound files
+2. Keep the default settings but manually set:
+   - Output Directory: dist
 
-## Troubleshooting
+## Accessing Your Deployed Site
 
-If your deployment fails:
+Always use the base URL provided by Vercel:
+```
+https://kidslot.vercel.app
+```
 
-1. Check that your project has the basic required files:
-   - index.html
-   - styles.css
-   - script.js
-   - simple vercel.json
+Do NOT append `/index.html` to the URL.
 
-2. Ensure no build errors by checking Vercel logs
+## Troubleshooting 404 Errors
 
-3. Try deleting the project in Vercel and redeploying
+If you still get 404 errors:
+
+1. Delete the project from your Vercel dashboard
+2. Create a new project on Vercel
+3. Try deploying again with Method 3 (Simple Deploy)
+4. Check the Vercel logs for any specific errors
+
+## Sound Files
+
+For the full experience, add sound files to your repository:
+- `sounds/spin.mp3` - A spinning sound effect
+- `sounds/win.mp3` - A winning sound effect
+- `sounds/background.mp3` - Background music
+
+The game will still work without sound files.
