@@ -5,7 +5,8 @@
       "WebFetch(domain:pixabay.com)",
       "Bash(ls:*)",
       "Bash(rm:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }

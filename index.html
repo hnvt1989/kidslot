@@ -34,10 +34,10 @@
     
     <div id="confetti-container" class="hidden"></div>
     
-    <!-- Audio files with fallback paths for Vercel -->
-    <audio id="spin-sound" src="sounds/spin.mp3" preload="auto" onerror="this.onerror=null; this.src='/sounds/spin.mp3';"></audio>
-    <audio id="win-sound" src="sounds/win.mp3" preload="auto" onerror="this.onerror=null; this.src='/sounds/win.mp3';"></audio>
-    <audio id="bgm" src="sounds/background.mp3" preload="auto" loop onerror="this.onerror=null; this.src='/sounds/background.mp3';"></audio>
+    <!-- Audio files with fallback paths for Vercel, optimized for iOS -->
+    <audio id="spin-sound" src="sounds/spin.mp3" preload="auto" playsinline webkit-playsinline muted onerror="this.onerror=null; this.src='/sounds/spin.mp3';"></audio>
+    <audio id="win-sound" src="sounds/win.mp3" preload="auto" playsinline webkit-playsinline muted onerror="this.onerror=null; this.src='/sounds/win.mp3';"></audio>
+    <audio id="bgm" src="sounds/background.mp3" preload="auto" loop playsinline webkit-playsinline muted onerror="this.onerror=null; this.src='/sounds/background.mp3';"></audio>
     
     <script src="script.js"></script>
 </body>

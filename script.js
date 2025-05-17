@@ -8,6 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const bgm = document.getElementById('bgm');
     const confettiContainer = document.getElementById('confetti-container');
     
+    // Audio context for iOS compatibility
+    let audioContext;
+    let audioInitialized = false;
+    
     // Array of items for the slot machine
     const items = [
         { emoji: '🐶', name: 'dog' },
@@ -42,21 +46,115 @@ document.addEventListener('DOMContentLoaded', () => {
         // Set up error handling for audio elements
         setupAudioErrorHandling();
         
-        // Play background music at low volume
+        // We'll start background music after user interaction
         bgm.volume = 0.3;
-        bgm.play().catch(error => console.log('Auto-play blocked: ', error));
+        
+        // Create an overlay to prompt user to tap for sound (iOS requirement)
+        createAudioPrompt();
     }
     
-    // Handle audio loading errors
+    // Create overlay to prompt for interaction (required for iOS audio)
+    function createAudioPrompt() {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
+        if (!isIOS && !navigator.userAgent.includes('Safari')) return;
+        
+        const overlay = document.createElement('div');
+        overlay.id = 'audio-prompt-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        overlay.style.display = 'flex';
+        overlay.style.justifyContent = 'center';
+        overlay.style.alignItems = 'center';
+        overlay.style.zIndex = '9999';
+        overlay.style.cursor = 'pointer';
+        
+        const message = document.createElement('div');
+        message.style.color = 'white';
+        message.style.fontSize = '24px';
+        message.style.fontFamily = "'Comic Sans MS', cursive, sans-serif";
+        message.style.textAlign = 'center';
+        message.style.padding = '20px';
+        message.style.backgroundColor = '#ff6b6b';
+        message.style.borderRadius = '15px';
+        message.style.maxWidth = '80%';
+        message.innerHTML = '👆 Tap to start the game with sound! 🔊';
+        
+        overlay.appendChild(message);
+        document.body.appendChild(overlay);
+        
+        overlay.addEventListener('click', () => {
+            // Initialize audio
+            initAudioContext();
+            
+            // Play background music
+            if (bgm) {
+                bgm.muted = false;
+                bgm.play().catch(error => console.log('Background music play error: ', error));
+            }
+            
+            // Remove overlay
+            overlay.remove();
+        });
+    }
+    
+    // Handle audio loading errors and initialize for iOS
     function setupAudioErrorHandling() {
         const audioElements = [spinSound, winSound, bgm];
         
         audioElements.forEach(audio => {
+            // Make audio play on iOS (needs to be muted initially)
+            audio.muted = true;
+            audio.playsInline = true;
+            audio.preload = 'auto';
+            
+            // Handle loading errors
             audio.addEventListener('error', (e) => {
                 console.log(`Error loading audio file: ${audio.src}`, e);
                 // The game will still work without sounds
             });
         });
+    }
+    
+    // Initialize audio context for iOS Safari
+    function initAudioContext() {
+        if (audioInitialized) return true;
+        
+        try {
+            // Create audio context
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioContext = new AudioContext();
+            
+            // Fix for iOS Safari - need to play and immediately pause all sounds
+            const audioElements = [spinSound, winSound, bgm];
+            
+            // Unmute all audio elements
+            audioElements.forEach(audio => {
+                audio.muted = false;
+                
+                // Play and immediately pause to initialize audio
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }).catch(error => {
+                        console.log('Audio play error: ', error);
+                    });
+                }
+            });
+            
+            audioInitialized = true;
+            return true;
+        } catch (e) {
+            console.error('Audio context initialization failed', e);
+            return false;
+        }
     }
     
     // Get a random item with higher chance of matching
@@ -87,8 +185,14 @@ document.addEventListener('DOMContentLoaded', () => {
         confettiContainer.innerHTML = '';
         
         // Play spin sound (if available)
+        // Initialize audio context if needed (for iOS)
+        if (!audioInitialized) {
+            initAudioContext();
+        }
+        
         if (spinSound && spinSound.play) {
             spinSound.currentTime = 0;
+            spinSound.muted = false;
             spinSound.play().catch(err => console.log('Could not play spin sound', err));
         }
         
@@ -165,8 +269,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Celebration for jackpot
     function celebrate() {
         // Play win sound (if available)
+        // Make sure audio is initialized (for iOS)
+        if (!audioInitialized) {
+            initAudioContext();
+        }
+        
         if (winSound && winSound.play) {
             winSound.currentTime = 0;
+            winSound.muted = false;
             winSound.play().catch(err => console.log('Could not play win sound', err));
         }
         
@@ -241,10 +351,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Handle user interaction to enable audio
+    // Handle user interaction to enable audio (for compatibility with all browsers)
     document.addEventListener('click', () => {
-        if (bgm.paused) {
+        // Initialize audio if not already done
+        if (!audioInitialized) {
+            initAudioContext();
+        }
+        
+        // Try to play background music
+        if (bgm && bgm.paused) {
+            bgm.muted = false;
             bgm.play().catch(error => console.log('Could not play audio: ', error));
+        }
+    }, { once: true });
+    
+    // Additional event listeners for iOS touch devices
+    document.addEventListener('touchstart', () => {
+        if (!audioInitialized) {
+            initAudioContext();
         }
     }, { once: true });
     
