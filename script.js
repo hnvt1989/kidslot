@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add jackpot speech after a short delay
         setTimeout(() => {
-            const congratsText = `Wow! You got three ${currentItems[0].name}s! Amazing job!`;
+            const congratsText = `HOORAY! You got three ${currentItems[0].name}s! WOW! You're AWESOME! That's AMAZING!`;
             const utterance = new SpeechSynthesisUtterance(congratsText);
             utterance.rate = 0.9;
             utterance.pitch = 1.3;
@@ -309,30 +309,75 @@ document.addEventListener('DOMContentLoaded', () => {
     function createConfetti() {
         confettiContainer.classList.remove('hidden');
         
-        // Create 100 confetti pieces
-        for (let i = 0; i < 100; i++) {
+        // Create 150 confetti pieces with different shapes
+        for (let i = 0; i < 150; i++) {
             const confetti = document.createElement('div');
-            confetti.style.width = `${Math.random() * 10 + 5}px`;
-            confetti.style.height = `${Math.random() * 10 + 5}px`;
-            confetti.style.backgroundColor = getRandomColor();
+            
+            // Randomly choose between different shapes
+            const shapeType = Math.floor(Math.random() * 4);
+            
+            if (shapeType === 0) {
+                // Square confetti
+                confetti.style.width = `${Math.random() * 15 + 10}px`;
+                confetti.style.height = `${Math.random() * 15 + 10}px`;
+                confetti.style.backgroundColor = getRandomColor();
+            } else if (shapeType === 1) {
+                // Circle confetti
+                const size = Math.random() * 15 + 10;
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                confetti.style.backgroundColor = getRandomColor();
+                confetti.style.borderRadius = '50%';
+            } else if (shapeType === 2) {
+                // Star emoji confetti
+                confetti.style.fontSize = `${Math.random() * 15 + 20}px`;
+                confetti.innerHTML = '⭐';
+                confetti.style.color = getRandomColor();
+            } else {
+                // Party emoji confetti - random selection of fun emojis
+                const emojis = ['🎉', '🎊', '🎈', '🎂', '🎁', '🥳', '😃', '👏', '💯', '🦄', '🌈'];
+                const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+                confetti.style.fontSize = `${Math.random() * 20 + 20}px`;
+                confetti.innerHTML = emoji;
+            }
+            
             confetti.style.position = 'absolute';
             confetti.style.left = `${Math.random() * 100}%`;
-            confetti.style.top = `-10px`;
+            confetti.style.top = `-20px`;
             confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
-            confetti.style.animation = `fall ${Math.random() * 3 + 2}s linear forwards`;
+            confetti.style.opacity = `${Math.random() * 0.5 + 0.5}`;
+            
+            // Add some wobble and spin to the animation
+            const fallDuration = Math.random() * 3 + 3;
+            const spinDirection = Math.random() > 0.5 ? 1 : -1;
+            const spinAmount = Math.random() * 5 + 3;
+            
+            confetti.style.animation = `fall ${fallDuration}s ease-in forwards, spin ${spinAmount}s linear infinite ${spinDirection > 0 ? '' : 'reverse'}`;
+            
             confettiContainer.appendChild(confetti);
         }
         
-        // Add falling animation
+        // Add animations
         const style = document.createElement('style');
         style.textContent = `
             @keyframes fall {
-                to {
-                    transform: translateY(100vh) rotate(${Math.random() * 360}deg);
-                }
+                0% { transform: translateY(0) rotate(0); opacity: 1; }
+                25% { transform: translateY(25vh) translateX(${Math.random() * 10 - 5}vw) rotate(${Math.random() * 180}deg); }
+                50% { transform: translateY(50vh) translateX(${Math.random() * -10 + 5}vw) rotate(${Math.random() * 360}deg); }
+                75% { transform: translateY(75vh) translateX(${Math.random() * 10 - 5}vw) rotate(${Math.random() * 540}deg); }
+                100% { transform: translateY(100vh) rotate(${Math.random() * 720}deg); opacity: 0; }
+            }
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
             }
         `;
         document.head.appendChild(style);
+        
+        // Remove confetti after animation completes
+        setTimeout(() => {
+            confettiContainer.innerHTML = '';
+        }, 8000);
     }
     
     // Get random bright color
