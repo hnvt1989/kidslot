@@ -1,12 +1,6 @@
 {
-  "version": 2,
-  "rewrites": [
-    { "source": "/index.html", "destination": "/" }
-  ],
   "routes": [
     { "handle": "filesystem" },
-    { "src": "/sounds/(.*)", "dest": "/sounds/$1" },
-    { "src": "/(.*\\.(js|css|json|mp3|png|jpg|jpeg|gif|ico))", "dest": "/$1" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
