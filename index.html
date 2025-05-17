@@ -39,9 +39,10 @@
         </div>
     </div>
     
-    <audio id="spin-sound" src="sounds/spin.mp3" preload="auto"></audio>
-    <audio id="win-sound" src="sounds/win.mp3" preload="auto"></audio>
-    <audio id="bgm" src="sounds/background.mp3" preload="auto" loop></audio>
+    <!-- Audio files with fallback paths for Vercel -->
+    <audio id="spin-sound" src="sounds/spin.mp3" preload="auto" onerror="this.onerror=null; this.src='/sounds/spin.mp3';"></audio>
+    <audio id="win-sound" src="sounds/win.mp3" preload="auto" onerror="this.onerror=null; this.src='/sounds/win.mp3';"></audio>
+    <audio id="bgm" src="sounds/background.mp3" preload="auto" loop onerror="this.onerror=null; this.src='/sounds/background.mp3';"></audio>
     
     <script src="script.js"></script>
 </body>
