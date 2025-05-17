@@ -1,0 +1,8 @@
+# Redirect primary index
+/index.html              /              301
+
+# Handle sound file routing
+/sounds/*                /sounds/:splat  200
+
+# Fallback for all other paths
+/*                      /index.html     200

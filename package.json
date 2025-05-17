@@ -1,0 +1,17 @@
+{
+  "name": "kidslot",
+  "version": "1.0.0",
+  "description": "A fun and colorful slot machine game designed for kids around 6 years old",
+  "main": "index.html",
+  "scripts": {
+    "start": "node server.js",
+    "serve": "serve",
+    "build": "echo 'No build step needed'"
+  },
+  "dependencies": {
+    "serve": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

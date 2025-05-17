@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "name": "kidslot",
+  "builds": [
+    { "src": "*.html", "use": "@vercel/static" },
+    { "src": "*.css", "use": "@vercel/static" },
+    { "src": "*.js", "use": "@vercel/static" },
+    { "src": "sounds/*.mp3", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/index.html", "status": 301, "headers": { "Location": "/" } },
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/sounds/(.*)", "dest": "/sounds/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}

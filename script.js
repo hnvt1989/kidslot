@@ -36,6 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
             currentItems[index] = randomItem;
         });
         
+        // Make sure win banner is hidden on start
+        winBanner.classList.add('hidden');
+        
+        // Clear any previous confetti
+        confettiContainer.classList.add('hidden');
+        confettiContainer.innerHTML = '';
+        
         // Set up error handling for audio elements
         setupAudioErrorHandling();
         
@@ -174,10 +181,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show win banner
         winBanner.classList.remove('hidden');
         
-        // Hide win banner after 5 seconds
+        // Hide win banner after 3 seconds
         setTimeout(() => {
             winBanner.classList.add('hidden');
-        }, 5000);
+        }, 3000);
         
         // Add jackpot speech after a short delay
         setTimeout(() => {
