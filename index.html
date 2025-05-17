@@ -34,16 +34,24 @@
     
     <div id="confetti-container" class="hidden"></div>
     
+    <!-- Audio permission overlay for iOS -->
+    <div id="audio-permission" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 1000; text-align: center; padding-top: 20%;">
+        <div style="background-color: white; max-width: 80%; margin: 0 auto; padding: 20px; border-radius: 10px;">
+            <h2 style="color: #ff6b6b;">Enable Sound</h2>
+            <p>This game needs permission to play sounds.</p>
+            <button id="enable-audio" style="background-color: #ff6b6b; color: white; border: none; padding: 10px 20px; border-radius: 50px; margin: 10px; font-size: 16px;">Enable Audio</button>
+            <button id="dismiss-audio-warning" style="background-color: #888; color: white; border: none; padding: 10px 20px; border-radius: 50px; margin: 10px; font-size: 16px;">Continue Without Sound</button>
+            <button id="test-audio" style="background-color: #4ea8de; color: white; border: none; padding: 10px 20px; border-radius: 50px; margin: 10px; font-size: 16px;">Test Audio</button>
+        </div>
+    </div>
+    
     <!-- Simple audio container for UI sounds -->
     <div id="audio-container">
         <!-- Audio files with fallback paths for Vercel, optimized for iOS -->
-        <audio id="spin-sound" src="sounds/spin.mp3" preload="auto" playsinline="true" webkit-playsinline="true" muted onerror="this.onerror=null; this.src='/sounds/spin.mp3';"></audio>
-        <audio id="win-sound" src="sounds/win.mp3" preload="auto" playsinline="true" webkit-playsinline="true" muted onerror="this.onerror=null; this.src='/sounds/win.mp3';"></audio>
-        <audio id="bgm" src="sounds/background.mp3" preload="auto" loop playsinline="true" webkit-playsinline="true" muted onerror="this.onerror=null; this.src='/sounds/background.mp3';"></audio>
+        <audio id="spin-sound" src="sounds/spin.mp3" preload="auto" playsinline="true" webkit-playsinline="true" onerror="this.onerror=null; this.src='/sounds/spin.mp3';"></audio>
+        <audio id="win-sound" src="sounds/win.mp3" preload="auto" playsinline="true" webkit-playsinline="true" onerror="this.onerror=null; this.src='/sounds/win.mp3';"></audio>
+        <audio id="bgm" src="sounds/background.mp3" preload="auto" loop playsinline="true" webkit-playsinline="true" onerror="this.onerror=null; this.src='/sounds/background.mp3';"></audio>
     </div>
-    
-    <!-- Audio unlock button (hidden but necessary for iOS) -->
-    <button id="audio-unlock" style="position: absolute; opacity: 0; width: 0; height: 0;">Enable Sound</button>
     
     <!-- iOS audio fix script - must be loaded before main script -->
     <script src="ios-audio-fix.js"></script>

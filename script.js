@@ -4,28 +4,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const spinButton = document.getElementById('spin-button');
     const resetButton = document.getElementById('reset-button');
     const confettiContainer = document.getElementById('confetti-container');
+    const audioPermissionMessage = document.getElementById('audio-permission');
     
-    // Audio handling - using HTML Audio + Web Audio API for iOS support
-    let audioContext;
-    let audioInitialized = false;
-    
-    // Audio buffers and sources
-    let spinSoundBuffer = null;
-    let winSoundBuffer = null;
-    let bgmBuffer = null;
-    let bgmSource = null;
-    let bgmPlaying = false;
-    
-    // Create audio elements programmatically
+    // Audio elements
     const spinSound = document.getElementById('spin-sound');
     const winSound = document.getElementById('win-sound');
     const bgm = document.getElementById('bgm');
-    const audioUnlockButton = document.getElementById('audio-unlock');
+    
+    // Audio initialization state
+    let audioInitialized = false;
     
     // Detect iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isAndroid = /Android/i.test(navigator.userAgent);
     
     // Array of items for the slot machine
     const items = [
@@ -58,198 +49,123 @@ document.addEventListener('DOMContentLoaded', () => {
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
         
-        // Set up Web Audio API
-        setupWebAudio();
-        
-        // Create an overlay to prompt user to tap for sound (iOS requirement)
-        createAudioPrompt();
-    }
-    
-    // Create overlay to prompt for interaction (required for iOS audio)
-    function createAudioPrompt() {
-        // Skip if not iOS or Safari and audio is already initialized
-        if ((!isIOS && !isSafari) || audioInitialized) return;
-        
-        const overlay = document.createElement('div');
-        overlay.id = 'audio-prompt-overlay';
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        overlay.style.display = 'flex';
-        overlay.style.justifyContent = 'center';
-        overlay.style.alignItems = 'center';
-        overlay.style.zIndex = '9999';
-        overlay.style.cursor = 'pointer';
-        
-        const message = document.createElement('div');
-        message.style.color = 'white';
-        message.style.fontSize = '24px';
-        message.style.fontFamily = "'Comic Sans MS', cursive, sans-serif";
-        message.style.textAlign = 'center';
-        message.style.padding = '20px';
-        message.style.backgroundColor = '#ff6b6b';
-        message.style.borderRadius = '15px';
-        message.style.maxWidth = '80%';
-        message.innerHTML = '👆 Tap to start the game with sound! 🔊';
-        
-        overlay.appendChild(message);
-        document.body.appendChild(overlay);
-        
-        overlay.addEventListener('click', () => {
-            // Unlock audio for iOS
-            unlockAudioForIOS();
+        // Show audio instructions for mobile devices
+        if (isIOS || isAndroid) {
+            audioPermissionMessage.style.display = 'block';
             
-            // Play background music using Web Audio API
-            playBackgroundMusic();
-            
-            // Remove overlay
-            overlay.remove();
-        });
-    }
-    
-    // Create and configure Web Audio API for iOS compatibility
-    function setupWebAudio() {
-        try {
-            // Create audio context
-            window.AudioContext = window.AudioContext || window.webkitAudioContext;
-            audioContext = new AudioContext();
-            
-            // Function to load audio file into buffer
-            const loadAudioFile = (url, callback) => {
-                const request = new XMLHttpRequest();
-                request.open('GET', url, true);
-                request.responseType = 'arraybuffer';
-                
-                request.onload = () => {
-                    audioContext.decodeAudioData(
-                        request.response,
-                        (buffer) => {
-                            callback(buffer);
-                        },
-                        (error) => {
-                            console.error('Error decoding audio data', error);
-                        }
-                    );
-                };
-                
-                request.onerror = () => {
-                    console.error('Error loading audio file', url);
-                };
-                
-                request.send();
-            };
-            
-            // Load spin sound
-            loadAudioFile('sounds/spin.mp3', (buffer) => {
-                spinSoundBuffer = buffer;
-                console.log('Spin sound loaded');
+            // Handle dismiss button
+            document.getElementById('dismiss-audio-warning').addEventListener('click', () => {
+                audioPermissionMessage.style.display = 'none';
             });
             
-            // Load win sound
-            loadAudioFile('sounds/win.mp3', (buffer) => {
-                winSoundBuffer = buffer;
-                console.log('Win sound loaded');
+            // Handle enable audio button
+            document.getElementById('enable-audio').addEventListener('click', () => {
+                initializeAudio();
+                
+                // Show feedback to the user
+                const enableButton = document.getElementById('enable-audio');
+                enableButton.textContent = "Audio Enabled!";
+                enableButton.style.backgroundColor = "#4CAF50";
+                
+                // Hide the overlay after a short delay
+                setTimeout(() => {
+                    audioPermissionMessage.style.display = 'none';
+                }, 1500);
             });
             
-            // Load background music
-            loadAudioFile('sounds/background.mp3', (buffer) => {
-                bgmBuffer = buffer;
-                console.log('Background music loaded');
+            // Handle test audio button
+            document.getElementById('test-audio').addEventListener('click', () => {
+                try {
+                    // Play a test sound
+                    const testAudio = new Audio("https://cdn.freesound.org/previews/242/242758_4484625-lq.mp3");
+                    testAudio.volume = 1.0;
+                    
+                    const testButton = document.getElementById('test-audio');
+                    testButton.textContent = "Playing test...";
+                    
+                    testAudio.play().then(() => {
+                        testButton.textContent = "Audio Works! ✓";
+                        testButton.style.backgroundColor = "#4CAF50";
+                    }).catch(error => {
+                        console.error("Test audio error:", error);
+                        testButton.textContent = "Audio Failed! Try again";
+                        testButton.style.backgroundColor = "#F44336";
+                    });
+                } catch (error) {
+                    console.error("Error setting up test audio:", error);
+                }
             });
-            
-            return true;
-        } catch (e) {
-            console.error('Web Audio API not supported', e);
-            return false;
         }
+        
+        // Initialize audio on any user interaction
+        document.body.addEventListener('click', initializeAudio, { once: true });
     }
     
-    // Play sound using Web Audio API
-    function playSound(buffer) {
-        if (!audioContext || !buffer) return;
+    // Function to initialize audio context and speech synthesis
+    function initializeAudio() {
+        if (audioInitialized) return;
         
-        try {
-            const source = audioContext.createBufferSource();
-            source.buffer = buffer;
-            source.connect(audioContext.destination);
-            source.start(0);
-            return source;
-        } catch (e) {
-            console.error('Error playing audio', e);
-            return null;
-        }
-    }
-    
-    // Play background music with looping
-    function playBackgroundMusic() {
-        if (!audioContext || !bgmBuffer || bgmPlaying) return;
+        console.log("Initializing audio...");
         
-        try {
-            if (bgmSource) {
-                bgmSource.stop();
-            }
-            
-            bgmSource = audioContext.createBufferSource();
-            bgmSource.buffer = bgmBuffer;
-            
-            // Create gain node for volume control
+        // Create a short silent sound and play it to initialize audio context
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            const audioContext = new AudioContext();
             const gainNode = audioContext.createGain();
-            gainNode.gain.value = 0.3; // Lower volume
-            
-            bgmSource.connect(gainNode);
+            gainNode.gain.value = 0; // Silent
             gainNode.connect(audioContext.destination);
             
-            bgmSource.loop = true;
-            bgmSource.start(0);
-            bgmPlaying = true;
-            
-            return bgmSource;
-        } catch (e) {
-            console.error('Error playing background music', e);
-            return null;
-        }
-    }
-    
-    // Unlock audio on iOS
-    function unlockAudioForIOS() {
-        if (audioInitialized) return true;
-        
-        // Create and start audio context
-        if (!audioContext) {
-            setupWebAudio();
+            // Create and play a short sound
+            const oscillator = audioContext.createOscillator();
+            oscillator.connect(gainNode);
+            oscillator.start();
+            oscillator.stop(0.001);
         }
         
-        // Resume audio context (needed for newer browsers)
-        if (audioContext && audioContext.state === 'suspended') {
-            audioContext.resume();
+        // Try to initialize speech synthesis
+        if ('speechSynthesis' in window) {
+            // Create a short utterance and speak it silently
+            const speech = new SpeechSynthesisUtterance('');
+            speech.volume = 0;
+            window.speechSynthesis.speak(speech);
         }
         
-        // Play a silent buffer to unlock the audio
-        const silentBuffer = audioContext.createBuffer(1, 1, 22050);
-        const source = audioContext.createBufferSource();
-        source.buffer = silentBuffer;
-        source.connect(audioContext.destination);
-        source.start(0);
+        // Play a silent audio to unlock audio playback on iOS
+        const silentAudio = new Audio("data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgAAAAA=");
+        silentAudio.play().catch(e => console.log("Silent audio play error:", e));
         
-        // Try to play and immediately pause HTML audio elements as backup
+        // Attempt to unlock all audio elements
         const audioElements = [spinSound, winSound, bgm];
         audioElements.forEach(audio => {
             if (audio) {
+                // Make sure audio is not muted
                 audio.muted = false;
-                const promise = audio.play();
-                if (promise !== undefined) {
-                    promise.then(() => {
+                
+                // Load and try to play/pause to unlock
+                audio.load();
+                audio.play()
+                    .then(() => {
                         audio.pause();
                         audio.currentTime = 0;
-                    }).catch(e => console.log('Audio play error:', e));
-                }
+                        console.log(`Unlocked audio: ${audio.id}`);
+                    })
+                    .catch(error => {
+                        console.log(`Failed to unlock audio ${audio.id}:`, error);
+                    });
             }
         });
         
+        // Set background music volume
+        if (bgm) {
+            bgm.volume = 0.3;
+            
+            // Start background music
+            bgm.play().catch(e => console.log("BGM play error:", e));
+        }
+        
         audioInitialized = true;
+        console.log("Audio initialization complete!");
+        
         return true;
     }
     
@@ -280,15 +196,13 @@ document.addEventListener('DOMContentLoaded', () => {
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
         
-        // Play spin sound using Web Audio API
+        // Initialize audio if needed and play spin sound
         if (!audioInitialized) {
-            unlockAudioForIOS();
+            initializeAudio();
         }
         
-        // Play using Web Audio API if available, fallback to HTML Audio
-        if (spinSoundBuffer) {
-            playSound(spinSoundBuffer);
-        } else if (spinSound && spinSound.play) {
+        // Play spin sound
+        if (spinSound && spinSound.play) {
             spinSound.currentTime = 0;
             spinSound.muted = false;
             spinSound.play().catch(err => console.log('Could not play spin sound', err));
@@ -366,15 +280,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Celebration for jackpot
     function celebrate() {
-        // Play win sound using Web Audio API
+        // Initialize audio if needed and play win sound
         if (!audioInitialized) {
-            unlockAudioForIOS();
+            initializeAudio();
         }
         
-        // Play using Web Audio API if available, fallback to HTML Audio
-        if (winSoundBuffer) {
-            playSound(winSoundBuffer);
-        } else if (winSound && winSound.play) {
+        // Play win sound
+        if (winSound && winSound.play) {
             winSound.currentTime = 0;
             winSound.muted = false;
             winSound.play().catch(err => console.log('Could not play win sound', err));
