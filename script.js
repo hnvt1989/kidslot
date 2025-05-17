@@ -264,33 +264,48 @@ document.addEventListener('DOMContentLoaded', () => {
         // Set different timeouts for each slot
         const stopTimes = [1000, 1500, 2000];
         
+        // Determine if this spin should be a win (30% probability)
+        const isWinningRound = Math.random() < 0.3;
+        
+        // Select a random item for the winning combination
+        const winningItem = getRandomItem();
+        
         // Stop each slot at different times
         slots.forEach((slot, index) => {
             setTimeout(() => {
                 // Stop spinning
                 slot.parentElement.classList.remove('spinning');
                 
-                // Set the result
-                if (index === 2) {
-                    // For the last slot, increase chance of matching by 50%
-                    const shouldForceMatch = Math.random() < 0.5;
-                    
-                    if (shouldForceMatch && currentItems[0] && currentItems[1]) {
-                        // Make it match one of the previous slots
-                        const matchIndex = Math.random() < 0.5 ? 0 : 1;
-                        slot.textContent = currentItems[matchIndex].emoji;
-                        currentItems[index] = currentItems[matchIndex];
+                if (isWinningRound) {
+                    // For winning rounds, all slots show the same item
+                    slot.textContent = winningItem.emoji;
+                    currentItems[index] = winningItem;
+                } else {
+                    // For non-winning rounds
+                    if (index === 2) {
+                        // For the last slot, make sure it's different from at least one of the previous slots
+                        // to ensure it's not a win
+                        let randomItem;
+                        
+                        // Check if first two slots are the same
+                        if (currentItems[0].name === currentItems[1].name) {
+                            // If first two match, make sure the third is different
+                            do {
+                                randomItem = getRandomItem();
+                            } while (randomItem.name === currentItems[0].name);
+                        } else {
+                            // If first two are already different, just pick any random item
+                            randomItem = getRandomItem();
+                        }
+                        
+                        slot.textContent = randomItem.emoji;
+                        currentItems[index] = randomItem;
                     } else {
-                        // Normal random item
+                        // Normal random item for slots 1 and 2
                         const randomItem = getRandomItem();
                         slot.textContent = randomItem.emoji;
                         currentItems[index] = randomItem;
                     }
-                } else {
-                    // Normal random item for slots 1 and 2
-                    const randomItem = getRandomItem();
-                    slot.textContent = randomItem.emoji;
-                    currentItems[index] = randomItem;
                 }
                 
                 // Check if all slots have stopped
