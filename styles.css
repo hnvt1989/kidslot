@@ -20,6 +20,54 @@ body {
     max-width: 800px;
 }
 
+.win-counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffd166;
+    border-radius: 50px;
+    padding: 0.5rem 1.5rem;
+    margin: 0 auto 1.5rem;
+    width: fit-content;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border: 4px solid #ff6b6b;
+    animation: pulse 2s infinite;
+}
+
+.trophy {
+    font-size: 2rem;
+    margin-right: 0.5rem;
+}
+
+.counter-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ff6b6b;
+}
+
+#wins-count {
+    color: #ff0000;
+    text-shadow: 1px 1px 0 #ffca3a;
+    font-size: 1.8rem;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+
 @keyframes rainbow {
     0% { color: #ff6b6b; }
     20% { color: #ffca3a; }
@@ -179,4 +227,19 @@ button:active {
         font-size: 1.25rem;
     }
     
+    .win-counter {
+        padding: 0.4rem 1.2rem;
+    }
+    
+    .trophy {
+        font-size: 1.5rem;
+    }
+    
+    .counter-text {
+        font-size: 1.2rem;
+    }
+    
+    #wins-count {
+        font-size: 1.4rem;
+    }
 }

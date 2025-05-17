@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetButton = document.getElementById('reset-button');
     const confettiContainer = document.getElementById('confetti-container');
     const audioPermissionMessage = document.getElementById('audio-permission');
+    const winsCountElement = document.getElementById('wins-count');
     
     // Audio elements
     const spinSound = document.getElementById('spin-sound');
@@ -13,6 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Audio initialization state
     let audioInitialized = false;
+    
+    // Win counter
+    let winCount = 0;
     
     // Detect iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -333,15 +337,52 @@ document.addEventListener('DOMContentLoaded', () => {
         if (winSound && winSound.play) {
             winSound.currentTime = 0;
             winSound.muted = false;
+            winSound.volume = 1.0; // Ensure full volume for celebration
             winSound.play().catch(err => console.log('Could not play win sound', err));
         }
+        
+        // Increment win counter and update display
+        winCount++;
+        winsCountElement.textContent = winCount;
+        
+        // Animate the win counter
+        winsCountElement.style.animation = 'none';
+        setTimeout(() => {
+            winsCountElement.style.animation = 'rainbow 2s linear infinite';
+            
+            // Add a larger size temporarily
+            winsCountElement.style.fontSize = '2.5rem';
+            winsCountElement.style.transition = 'all 0.3s';
+            
+            // Return to normal size after animation
+            setTimeout(() => {
+                winsCountElement.style.fontSize = '';
+            }, 1000);
+        }, 10);
         
         // Show confetti
         createConfetti();
         
+        // Make slots bounce to celebrate
+        slots.forEach(slot => {
+            slot.parentElement.style.animation = 'bounce 0.5s ease-in-out 3';
+        });
+        
         // Add jackpot speech after a short delay
         setTimeout(() => {
-            const congratsText = `HOORAY! You got three ${currentItems[0].name}s! WOW! You're AWESOME! That's AMAZING!`;
+            // Create more exciting congratulations text based on win count
+            let congratsText = '';
+            
+            if (winCount === 1) {
+                congratsText = `HOORAY! You got three ${currentItems[0].name}s! WOW! You're AWESOME! That's your FIRST WIN!`;
+            } else if (winCount === 5) {
+                congratsText = `AMAZING! Five wins! YOU ARE A CHAMPION! You got three ${currentItems[0].name}s! HIGH FIVE!`;
+            } else if (winCount === 10) {
+                congratsText = `TEN WINS! YOU ARE INCREDIBLE! You're the ${currentItems[0].name} MASTER! SPECTACULAR!`;
+            } else {
+                congratsText = `HOORAY! You got three ${currentItems[0].name}s! That's ${winCount} wins! WOW! You're SUPER AWESOME! That's AMAZING!`;
+            }
+            
             const utterance = new SpeechSynthesisUtterance(congratsText);
             utterance.rate = 0.9;
             utterance.pitch = 1.3;
@@ -353,64 +394,121 @@ document.addEventListener('DOMContentLoaded', () => {
     function createConfetti() {
         confettiContainer.classList.remove('hidden');
         
-        // Create 150 confetti pieces with different shapes
-        for (let i = 0; i < 150; i++) {
+        // Create 250 confetti pieces with different shapes (increased count)
+        for (let i = 0; i < 250; i++) {
             const confetti = document.createElement('div');
             
-            // Randomly choose between different shapes
-            const shapeType = Math.floor(Math.random() * 4);
+            // Randomly choose between different shapes with more fun options
+            const shapeType = Math.floor(Math.random() * 6); // Increased shape variety
             
             if (shapeType === 0) {
                 // Square confetti
-                confetti.style.width = `${Math.random() * 15 + 10}px`;
-                confetti.style.height = `${Math.random() * 15 + 10}px`;
+                confetti.style.width = `${Math.random() * 20 + 10}px`; // Larger squares
+                confetti.style.height = `${Math.random() * 20 + 10}px`;
                 confetti.style.backgroundColor = getRandomColor();
+                // Add sparkle effect to some squares
+                if (Math.random() > 0.7) {
+                    confetti.style.boxShadow = `0 0 5px 2px ${getRandomColor(true)}`;
+                }
             } else if (shapeType === 1) {
                 // Circle confetti
-                const size = Math.random() * 15 + 10;
+                const size = Math.random() * 20 + 10; // Larger circles
                 confetti.style.width = `${size}px`;
                 confetti.style.height = `${size}px`;
                 confetti.style.backgroundColor = getRandomColor();
                 confetti.style.borderRadius = '50%';
+                // Add sparkle effect to some circles
+                if (Math.random() > 0.7) {
+                    confetti.style.boxShadow = `0 0 8px 3px ${getRandomColor(true)}`;
+                }
             } else if (shapeType === 2) {
                 // Star emoji confetti
-                confetti.style.fontSize = `${Math.random() * 15 + 20}px`;
+                confetti.style.fontSize = `${Math.random() * 25 + 25}px`; // Larger stars
                 confetti.innerHTML = '⭐';
                 confetti.style.color = getRandomColor();
-            } else {
-                // Party emoji confetti - random selection of fun emojis
-                const emojis = ['🎉', '🎊', '🎈', '🎂', '🎁', '🥳', '😃', '👏', '💯', '🦄', '🌈'];
+                // Add text shadow for glow effect
+                confetti.style.textShadow = `0 0 5px ${getRandomColor(true)}`;
+            } else if (shapeType === 3) {
+                // Party emoji confetti - expanded selection of fun emojis
+                const emojis = [
+                    '🎉', '🎊', '🎈', '🎂', '🎁', '🥳', '😃', '👏', '💯', '🦄', '🌈',
+                    '🍭', '🍬', '🍫', '🍦', '🧸', '🎮', '🏆', '🥇', '🪄', '✨', '💫', '🎯',
+                    '🦸‍♀️', '🧜‍♀️', '👸', '🧚', '🦹‍♂️', '🧙‍♂️', '🦁', '🐱', '🐶', '🐼', '🦊'
+                ];
                 const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-                confetti.style.fontSize = `${Math.random() * 20 + 20}px`;
+                confetti.style.fontSize = `${Math.random() * 30 + 20}px`; // Larger emojis
                 confetti.innerHTML = emoji;
+                // Add text shadow for glow effect
+                confetti.style.textShadow = `0 0 5px ${getRandomColor(true)}`;
+            } else if (shapeType === 4) {
+                // Heart shape
+                confetti.style.fontSize = `${Math.random() * 25 + 25}px`;
+                confetti.innerHTML = '❤️';
+                confetti.style.color = getRandomColor();
+            } else {
+                // Sparkle/Glitter particle
+                const size = Math.random() * 8 + 4; // Small sparkles
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                confetti.style.backgroundColor = getRandomColor(true); // Brighter colors
+                confetti.style.borderRadius = '50%';
+                confetti.style.boxShadow = `0 0 ${size * 2}px ${size}px ${getRandomColor(true)}`; // Glow effect
             }
             
             confetti.style.position = 'absolute';
+            
+            // Distribute confetti more widely
             confetti.style.left = `${Math.random() * 100}%`;
-            confetti.style.top = `-20px`;
+            
+            // Start some confetti from the bottom for more fun
+            if (Math.random() > 0.8) {
+                confetti.style.bottom = `0`;
+                confetti.style.top = 'auto';
+            } else {
+                confetti.style.top = `-20px`;
+            }
+            
             confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
             confetti.style.opacity = `${Math.random() * 0.5 + 0.5}`;
+            confetti.style.zIndex = '1000';
             
             // Add some wobble and spin to the animation
-            const fallDuration = Math.random() * 3 + 3;
+            const fallDuration = Math.random() * 4 + 3; // Longer fall duration
             const spinDirection = Math.random() > 0.5 ? 1 : -1;
-            const spinAmount = Math.random() * 5 + 3;
+            const spinAmount = Math.random() * 6 + 3;
             
-            confetti.style.animation = `fall ${fallDuration}s ease-in forwards, spin ${spinAmount}s linear infinite ${spinDirection > 0 ? '' : 'reverse'}`;
+            // Add more varied animations
+            if (Math.random() > 0.7) {
+                // Some confetti will have a zig-zag fall
+                confetti.style.animation = `zigzagFall ${fallDuration}s ease-in forwards, spin ${spinAmount}s linear infinite ${spinDirection > 0 ? '' : 'reverse'}`;
+            } else {
+                // Regular falling confetti
+                confetti.style.animation = `fall ${fallDuration}s ease-in forwards, spin ${spinAmount}s linear infinite ${spinDirection > 0 ? '' : 'reverse'}`;
+            }
             
             confettiContainer.appendChild(confetti);
         }
         
-        // Add animations
+        // Add animations with more dynamic movement
         const style = document.createElement('style');
         style.textContent = `
             @keyframes fall {
                 0% { transform: translateY(0) rotate(0); opacity: 1; }
-                25% { transform: translateY(25vh) translateX(${Math.random() * 10 - 5}vw) rotate(${Math.random() * 180}deg); }
-                50% { transform: translateY(50vh) translateX(${Math.random() * -10 + 5}vw) rotate(${Math.random() * 360}deg); }
-                75% { transform: translateY(75vh) translateX(${Math.random() * 10 - 5}vw) rotate(${Math.random() * 540}deg); }
+                25% { transform: translateY(25vh) translateX(${Math.random() * 20 - 10}vw) rotate(${Math.random() * 180}deg); }
+                50% { transform: translateY(50vh) translateX(${Math.random() * -20 + 10}vw) rotate(${Math.random() * 360}deg); }
+                75% { transform: translateY(75vh) translateX(${Math.random() * 20 - 10}vw) rotate(${Math.random() * 540}deg); }
                 100% { transform: translateY(100vh) rotate(${Math.random() * 720}deg); opacity: 0; }
             }
+            
+            @keyframes zigzagFall {
+                0% { transform: translateY(0) translateX(0) rotate(0); opacity: 1; }
+                20% { transform: translateY(20vh) translateX(30px) rotate(${Math.random() * 180}deg); }
+                40% { transform: translateY(40vh) translateX(-30px) rotate(${Math.random() * 360}deg); }
+                60% { transform: translateY(60vh) translateX(30px) rotate(${Math.random() * 540}deg); }
+                80% { transform: translateY(80vh) translateX(-30px) rotate(${Math.random() * 720}deg); }
+                100% { transform: translateY(100vh) translateX(0) rotate(${Math.random() * 900}deg); opacity: 0; }
+            }
+            
             @keyframes spin {
                 from { transform: rotate(0deg); }
                 to { transform: rotate(360deg); }
@@ -418,19 +516,60 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         document.head.appendChild(style);
         
+        // Add a celebratory background flash effect
+        const flashOverlay = document.createElement('div');
+        flashOverlay.style.position = 'fixed';
+        flashOverlay.style.top = '0';
+        flashOverlay.style.left = '0';
+        flashOverlay.style.width = '100%';
+        flashOverlay.style.height = '100%';
+        flashOverlay.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+        flashOverlay.style.zIndex = '999';
+        flashOverlay.style.pointerEvents = 'none';
+        flashOverlay.style.animation = 'flash 0.5s ease-out';
+        
+        const flashStyle = document.createElement('style');
+        flashStyle.textContent = `
+            @keyframes flash {
+                0% { opacity: 0; }
+                50% { opacity: 1; }
+                100% { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(flashStyle);
+        document.body.appendChild(flashOverlay);
+        
+        // Remove flash overlay after animation
+        setTimeout(() => {
+            if (document.body.contains(flashOverlay)) {
+                document.body.removeChild(flashOverlay);
+            }
+        }, 500);
+        
         // Remove confetti after animation completes
         setTimeout(() => {
             confettiContainer.innerHTML = '';
-        }, 8000);
+        }, 10000); // Longer confetti duration
     }
     
     // Get random bright color
-    function getRandomColor() {
+    function getRandomColor(bright = false) {
+        // Original color palette
         const colors = [
             '#FF6B6B', '#FFD166', '#06D6A0', '#118AB2', '#073B4C',
             '#F72585', '#7209B7', '#3A0CA3', '#4CC9F0', '#4361EE'
         ];
-        return colors[Math.floor(Math.random() * colors.length)];
+        
+        // Brighter, more vibrant colors for special effects
+        const brightColors = [
+            '#FF0000', '#FF9500', '#FFFF00', '#00FF00', '#00FFFF', 
+            '#0000FF', '#9500FF', '#FF00FF', '#FF007B', '#00E5FF',
+            '#FFA6A6', '#FFE066', '#A6FFE8', '#A6C4FF', '#D5A6FF'
+        ];
+        
+        return bright ? 
+            brightColors[Math.floor(Math.random() * brightColors.length)] : 
+            colors[Math.floor(Math.random() * colors.length)];
     }
     
     // Event listeners
@@ -444,12 +583,42 @@ document.addEventListener('DOMContentLoaded', () => {
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
         
+        // Reset win counter
+        winCount = 0;
+        winsCountElement.textContent = winCount;
+        winsCountElement.style.animation = 'none';
+        
+        // Restore normal counter style
+        winsCountElement.style.fontSize = '';
+        
+        // Reset slot animations
+        slots.forEach(slot => {
+            slot.parentElement.style.animation = 'none';
+        });
+        
         // Set new random items
         slots.forEach((slot, index) => {
             const randomItem = getRandomItem();
             slot.textContent = randomItem.emoji;
             currentItems[index] = randomItem;
         });
+        
+        // Play a reset sound effect to make it fun
+        if (spinSound && spinSound.play) {
+            spinSound.currentTime = 0;
+            spinSound.muted = false;
+            spinSound.volume = 0.5;
+            spinSound.play().catch(err => console.log('Could not play spin sound', err));
+        }
+        
+        // Add a fun "reset" speech
+        setTimeout(() => {
+            const resetText = "Let's play again! Good luck!";
+            const utterance = new SpeechSynthesisUtterance(resetText);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.2;
+            window.speechSynthesis.speak(utterance);
+        }, 300);
     });
     
     // Handle user interaction to enable audio (for compatibility with all browsers)
