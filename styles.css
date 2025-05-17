@@ -2,7 +2,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Comic Sans MS', cursive, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Comic Sans MS', 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 body {
@@ -36,6 +36,7 @@ h1 {
     letter-spacing: 1px;
     font-weight: bold;
     animation: rainbow 8s linear infinite;
+    font-family: -apple-system, BlinkMacSystemFont, 'Comic Sans MS', 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 .slot-machine {
@@ -78,6 +79,7 @@ h1 {
     align-items: center;
     font-size: 90px;
     background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(240,240,240,1) 100%);
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
 }
 
 .controls {
@@ -97,6 +99,9 @@ button {
     letter-spacing: 1px;
     font-weight: bold;
     text-transform: uppercase;
+    font-family: -apple-system, BlinkMacSystemFont, 'Comic Sans MS', 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 #spin-button {
