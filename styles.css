@@ -20,12 +20,22 @@ body {
     max-width: 800px;
 }
 
+@keyframes rainbow {
+    0% { color: #ff6b6b; }
+    20% { color: #ffca3a; }
+    40% { color: #8ac926; }
+    60% { color: #1982c4; }
+    80% { color: #6a4c93; }
+    100% { color: #ff6b6b; }
+}
+
 h1 {
-    color: #ff6b6b;
-    font-size: 3.5rem;
+    font-size: 3.8rem;
     margin-bottom: 2rem;
     text-shadow: 4px 4px 0 #ffd166;
     letter-spacing: 1px;
+    font-weight: bold;
+    animation: rainbow 8s linear infinite;
 }
 
 .slot-machine {

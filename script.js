@@ -20,16 +20,37 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Array of items for the slot machine
     const items = [
-        { emoji: '🐶', name: 'dog' },
-        { emoji: '🐱', name: 'cat' },
+        // Animals
+        { emoji: '🐶', name: 'puppy' },
+        { emoji: '🐱', name: 'kitty' },
         { emoji: '🐵', name: 'monkey' },
-        { emoji: '🐰', name: 'rabbit' },
+        { emoji: '🐰', name: 'bunny' },
         { emoji: '🦁', name: 'lion' },
         { emoji: '🐼', name: 'panda' },
         { emoji: '🦊', name: 'fox' },
         { emoji: '🐻', name: 'bear' },
-        { emoji: '🐨', name: 'koala' },
-        { emoji: '🦄', name: 'unicorn' }
+        { emoji: '🦄', name: 'unicorn' },
+        
+        // Princess and magical characters
+        { emoji: '👸', name: 'princess' },
+        { emoji: '🧚', name: 'fairy' },
+        { emoji: '🧜‍♀️', name: 'mermaid' },
+        { emoji: '🧙‍♂️', name: 'wizard' },
+        { emoji: '🦸‍♀️', name: 'superhero' },
+        
+        // Emotions and faces
+        { emoji: '😃', name: 'happy face' },
+        { emoji: '😄', name: 'laughing face' },
+        { emoji: '🤗', name: 'hugging face' },
+        { emoji: '😲', name: 'wow face' },
+        { emoji: '🥳', name: 'party face' },
+        
+        // Extra fun items
+        { emoji: '🌈', name: 'rainbow' },
+        { emoji: '⭐', name: 'star' },
+        { emoji: '🍦', name: 'ice cream' },
+        { emoji: '🎈', name: 'balloon' },
+        { emoji: '🎁', name: 'present' }
     ];
     
     // Game state
@@ -171,20 +192,43 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Get a random item with higher chance of matching
     function getRandomItem() {
-        // Reduce the effective items pool to increase match chances
-        // Use subset of items (first 4 items) with 80% probability
-        const useReducedPool = Math.random() < 0.8;
+        // Create a weighted selection system to increase chance of matches
         
-        if (useReducedPool) {
-            // Use only the first 4 items from the array to increase matching probability
-            const reducedPoolSize = 4;
-            const randomIndex = Math.floor(Math.random() * reducedPoolSize);
-            return items[randomIndex];
-        } else {
-            // Use any item with 20% probability
-            const randomIndex = Math.floor(Math.random() * items.length);
-            return items[randomIndex];
+        // Define which groups of items are likely to be selected
+        const itemGroups = [
+            // Popular items group (higher probability)
+            items.slice(0, 9),     // Animals (most common)
+            items.slice(9, 14),    // Princess and magical characters
+            items.slice(14, 19),   // Emotions/faces
+            items.slice(19, 24)    // Extra fun items
+        ];
+        
+        // Weights for each group - animals appear more often
+        const groupWeights = [0.5, 0.2, 0.15, 0.15]; // Adds to 1.0
+        
+        // First decide which group to pick from
+        const randomValue = Math.random();
+        let cumulativeWeight = 0;
+        let selectedGroup = 0;
+        
+        for (let i = 0; i < groupWeights.length; i++) {
+            cumulativeWeight += groupWeights[i];
+            if (randomValue < cumulativeWeight) {
+                selectedGroup = i;
+                break;
+            }
         }
+        
+        // Pick a random item from the selected group
+        const group = itemGroups[selectedGroup];
+        const randomIndex = Math.floor(Math.random() * group.length);
+        
+        // Special case to increase winning chances: 25% of the time, return a previously selected item
+        if (currentItems[0] && Math.random() < 0.25) {
+            return currentItems[0];
+        }
+        
+        return group[randomIndex];
     }
     
     // Spin animation
