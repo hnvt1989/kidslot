@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const spinSound = document.getElementById('spin-sound');
     const winSound = document.getElementById('win-sound');
     const bgm = document.getElementById('bgm');
+    const spinningSound = document.getElementById('spinning-sound');
     
     // Audio initialization state
     let audioInitialized = false;
@@ -162,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         silentAudio.play().catch(e => console.log("Silent audio play error:", e));
         
         // Attempt to unlock all audio elements
-        const audioElements = [spinSound, winSound, bgm];
+        const audioElements = [spinSound, winSound, bgm, spinningSound];
         audioElements.forEach(audio => {
             if (audio) {
                 // Make sure audio is not muted
@@ -242,21 +243,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isSpinning) return;
         
         isSpinning = true;
+        // Disable both buttons during spin
         spinButton.disabled = true;
+        resetButton.disabled = true;
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
         princessContainer.classList.add('hidden');
         
-        // Initialize audio if needed and play spin sound
+        // Initialize audio if needed
         if (!audioInitialized) {
             initializeAudio();
         }
         
-        // Play spin sound
+        // Play initial spin sound
         if (spinSound && spinSound.play) {
             spinSound.currentTime = 0;
             spinSound.muted = false;
+            spinSound.volume = 0.7; // Set volume for spin sound
             spinSound.play().catch(err => console.log('Could not play spin sound', err));
+        }
+        
+        // Play continuous spinning sound while reels are spinning
+        if (spinningSound && spinningSound.play) {
+            spinningSound.currentTime = 0;
+            spinningSound.muted = false;
+            spinningSound.volume = 0.5;
+            spinningSound.loop = true; // Make it loop while spinning
+            spinningSound.play().catch(err => console.log('Could not play spinning sound', err));
         }
         
         // Add spinning class
@@ -314,9 +327,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Check if all slots have stopped
                 if (index === slots.length - 1) {
                     setTimeout(() => {
+                        // Stop the spinning sound
+                        if (spinningSound && spinningSound.pause) {
+                            spinningSound.pause();
+                            spinningSound.currentTime = 0;
+                            spinningSound.loop = false;
+                        }
+                        
                         checkResult();
                         isSpinning = false;
-                        spinButton.disabled = false;
+                        
+                        // Keep buttons disabled for 6 seconds after spin completes
+                        setTimeout(() => {
+                            spinButton.disabled = false;
+                            resetButton.disabled = false;
+                        }, 6000);
                     }, 500);
                 }
             }, stopTimes[index]);
