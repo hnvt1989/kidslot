@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/sounds/(.*)", "dest": "/sounds/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
