@@ -3,14 +3,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const slots = document.querySelectorAll('.slot-inner');
     const spinButton = document.getElementById('spin-button');
     const resetButton = document.getElementById('reset-button');
+    const confettiContainer = document.getElementById('confetti-container');
+    
+    // Audio handling - using HTML Audio + Web Audio API for iOS support
+    let audioContext;
+    let audioInitialized = false;
+    
+    // Audio buffers and sources
+    let spinSoundBuffer = null;
+    let winSoundBuffer = null;
+    let bgmBuffer = null;
+    let bgmSource = null;
+    let bgmPlaying = false;
+    
+    // Create audio elements programmatically
     const spinSound = document.getElementById('spin-sound');
     const winSound = document.getElementById('win-sound');
     const bgm = document.getElementById('bgm');
-    const confettiContainer = document.getElementById('confetti-container');
+    const audioUnlockButton = document.getElementById('audio-unlock');
     
-    // Audio context for iOS compatibility
-    let audioContext;
-    let audioInitialized = false;
+    // Detect iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     
     // Array of items for the slot machine
     const items = [
@@ -43,11 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
         
-        // Set up error handling for audio elements
-        setupAudioErrorHandling();
-        
-        // We'll start background music after user interaction
-        bgm.volume = 0.3;
+        // Set up Web Audio API
+        setupWebAudio();
         
         // Create an overlay to prompt user to tap for sound (iOS requirement)
         createAudioPrompt();
@@ -55,10 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Create overlay to prompt for interaction (required for iOS audio)
     function createAudioPrompt() {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        
-        if (!isIOS && !navigator.userAgent.includes('Safari')) return;
+        // Skip if not iOS or Safari and audio is already initialized
+        if ((!isIOS && !isSafari) || audioInitialized) return;
         
         const overlay = document.createElement('div');
         overlay.id = 'audio-prompt-overlay';
@@ -89,72 +99,158 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(overlay);
         
         overlay.addEventListener('click', () => {
-            // Initialize audio
-            initAudioContext();
+            // Unlock audio for iOS
+            unlockAudioForIOS();
             
-            // Play background music
-            if (bgm) {
-                bgm.muted = false;
-                bgm.play().catch(error => console.log('Background music play error: ', error));
-            }
+            // Play background music using Web Audio API
+            playBackgroundMusic();
             
             // Remove overlay
             overlay.remove();
         });
     }
     
-    // Handle audio loading errors and initialize for iOS
-    function setupAudioErrorHandling() {
-        const audioElements = [spinSound, winSound, bgm];
-        
-        audioElements.forEach(audio => {
-            // Make audio play on iOS (needs to be muted initially)
-            audio.muted = true;
-            audio.playsInline = true;
-            audio.preload = 'auto';
-            
-            // Handle loading errors
-            audio.addEventListener('error', (e) => {
-                console.log(`Error loading audio file: ${audio.src}`, e);
-                // The game will still work without sounds
-            });
-        });
-    }
-    
-    // Initialize audio context for iOS Safari
-    function initAudioContext() {
-        if (audioInitialized) return true;
-        
+    // Create and configure Web Audio API for iOS compatibility
+    function setupWebAudio() {
         try {
             // Create audio context
             window.AudioContext = window.AudioContext || window.webkitAudioContext;
             audioContext = new AudioContext();
             
-            // Fix for iOS Safari - need to play and immediately pause all sounds
-            const audioElements = [spinSound, winSound, bgm];
-            
-            // Unmute all audio elements
-            audioElements.forEach(audio => {
-                audio.muted = false;
+            // Function to load audio file into buffer
+            const loadAudioFile = (url, callback) => {
+                const request = new XMLHttpRequest();
+                request.open('GET', url, true);
+                request.responseType = 'arraybuffer';
                 
-                // Play and immediately pause to initialize audio
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        audio.pause();
-                        audio.currentTime = 0;
-                    }).catch(error => {
-                        console.log('Audio play error: ', error);
-                    });
-                }
+                request.onload = () => {
+                    audioContext.decodeAudioData(
+                        request.response,
+                        (buffer) => {
+                            callback(buffer);
+                        },
+                        (error) => {
+                            console.error('Error decoding audio data', error);
+                        }
+                    );
+                };
+                
+                request.onerror = () => {
+                    console.error('Error loading audio file', url);
+                };
+                
+                request.send();
+            };
+            
+            // Load spin sound
+            loadAudioFile('sounds/spin.mp3', (buffer) => {
+                spinSoundBuffer = buffer;
+                console.log('Spin sound loaded');
             });
             
-            audioInitialized = true;
+            // Load win sound
+            loadAudioFile('sounds/win.mp3', (buffer) => {
+                winSoundBuffer = buffer;
+                console.log('Win sound loaded');
+            });
+            
+            // Load background music
+            loadAudioFile('sounds/background.mp3', (buffer) => {
+                bgmBuffer = buffer;
+                console.log('Background music loaded');
+            });
+            
             return true;
         } catch (e) {
-            console.error('Audio context initialization failed', e);
+            console.error('Web Audio API not supported', e);
             return false;
         }
+    }
+    
+    // Play sound using Web Audio API
+    function playSound(buffer) {
+        if (!audioContext || !buffer) return;
+        
+        try {
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.start(0);
+            return source;
+        } catch (e) {
+            console.error('Error playing audio', e);
+            return null;
+        }
+    }
+    
+    // Play background music with looping
+    function playBackgroundMusic() {
+        if (!audioContext || !bgmBuffer || bgmPlaying) return;
+        
+        try {
+            if (bgmSource) {
+                bgmSource.stop();
+            }
+            
+            bgmSource = audioContext.createBufferSource();
+            bgmSource.buffer = bgmBuffer;
+            
+            // Create gain node for volume control
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = 0.3; // Lower volume
+            
+            bgmSource.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            bgmSource.loop = true;
+            bgmSource.start(0);
+            bgmPlaying = true;
+            
+            return bgmSource;
+        } catch (e) {
+            console.error('Error playing background music', e);
+            return null;
+        }
+    }
+    
+    // Unlock audio on iOS
+    function unlockAudioForIOS() {
+        if (audioInitialized) return true;
+        
+        // Create and start audio context
+        if (!audioContext) {
+            setupWebAudio();
+        }
+        
+        // Resume audio context (needed for newer browsers)
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+        
+        // Play a silent buffer to unlock the audio
+        const silentBuffer = audioContext.createBuffer(1, 1, 22050);
+        const source = audioContext.createBufferSource();
+        source.buffer = silentBuffer;
+        source.connect(audioContext.destination);
+        source.start(0);
+        
+        // Try to play and immediately pause HTML audio elements as backup
+        const audioElements = [spinSound, winSound, bgm];
+        audioElements.forEach(audio => {
+            if (audio) {
+                audio.muted = false;
+                const promise = audio.play();
+                if (promise !== undefined) {
+                    promise.then(() => {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }).catch(e => console.log('Audio play error:', e));
+                }
+            }
+        });
+        
+        audioInitialized = true;
+        return true;
     }
     
     // Get a random item with higher chance of matching
@@ -184,13 +280,15 @@ document.addEventListener('DOMContentLoaded', () => {
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
         
-        // Play spin sound (if available)
-        // Initialize audio context if needed (for iOS)
+        // Play spin sound using Web Audio API
         if (!audioInitialized) {
-            initAudioContext();
+            unlockAudioForIOS();
         }
         
-        if (spinSound && spinSound.play) {
+        // Play using Web Audio API if available, fallback to HTML Audio
+        if (spinSoundBuffer) {
+            playSound(spinSoundBuffer);
+        } else if (spinSound && spinSound.play) {
             spinSound.currentTime = 0;
             spinSound.muted = false;
             spinSound.play().catch(err => console.log('Could not play spin sound', err));
@@ -268,13 +366,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Celebration for jackpot
     function celebrate() {
-        // Play win sound (if available)
-        // Make sure audio is initialized (for iOS)
+        // Play win sound using Web Audio API
         if (!audioInitialized) {
-            initAudioContext();
+            unlockAudioForIOS();
         }
         
-        if (winSound && winSound.play) {
+        // Play using Web Audio API if available, fallback to HTML Audio
+        if (winSoundBuffer) {
+            playSound(winSoundBuffer);
+        } else if (winSound && winSound.play) {
             winSound.currentTime = 0;
             winSound.muted = false;
             winSound.play().catch(err => console.log('Could not play win sound', err));
@@ -352,25 +452,62 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Handle user interaction to enable audio (for compatibility with all browsers)
-    document.addEventListener('click', () => {
-        // Initialize audio if not already done
-        if (!audioInitialized) {
-            initAudioContext();
+    function setupAudioEventListeners() {
+        // Add event listener to hidden button for iOS specific unlocking
+        if (audioUnlockButton) {
+            audioUnlockButton.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                if (!audioInitialized) {
+                    unlockAudioForIOS();
+                    playBackgroundMusic();
+                }
+            });
+            
+            // Programmatically trigger a click after a short delay
+            setTimeout(() => {
+                audioUnlockButton.click();
+            }, 1000);
         }
         
-        // Try to play background music
-        if (bgm && bgm.paused) {
-            bgm.muted = false;
-            bgm.play().catch(error => console.log('Could not play audio: ', error));
-        }
-    }, { once: true });
+        // Click event for all devices
+        document.addEventListener('click', () => {
+            // Unlock audio for iOS
+            if (!audioInitialized) {
+                unlockAudioForIOS();
+                playBackgroundMusic();
+            }
+        }, { once: true });
+        
+        // Touch events specifically for iOS
+        document.addEventListener('touchstart', () => {
+            if (!audioInitialized) {
+                unlockAudioForIOS();
+                playBackgroundMusic();
+            }
+        }, { once: true });
+        
+        // Touchend event (crucial for iOS Safari)
+        document.body.addEventListener('touchend', () => {
+            if (!audioInitialized) {
+                unlockAudioForIOS();
+                setTimeout(() => {
+                    playBackgroundMusic();
+                }, 100);
+            }
+        }, { once: true });
+        
+        // Special handling for spinButton 
+        spinButton.addEventListener('touchend', function(e) {
+            if (!audioInitialized) {
+                e.preventDefault(); // Prevent default just once for audio initialization
+                unlockAudioForIOS();
+                playBackgroundMusic();
+            }
+        }, { once: true });
+    }
     
-    // Additional event listeners for iOS touch devices
-    document.addEventListener('touchstart', () => {
-        if (!audioInitialized) {
-            initAudioContext();
-        }
-    }, { once: true });
+    // Call setup for audio events
+    setupAudioEventListeners();
     
     // Initialize the game
     initGame();

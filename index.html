@@ -34,11 +34,19 @@
     
     <div id="confetti-container" class="hidden"></div>
     
-    <!-- Audio files with fallback paths for Vercel, optimized for iOS -->
-    <audio id="spin-sound" src="sounds/spin.mp3" preload="auto" playsinline webkit-playsinline muted onerror="this.onerror=null; this.src='/sounds/spin.mp3';"></audio>
-    <audio id="win-sound" src="sounds/win.mp3" preload="auto" playsinline webkit-playsinline muted onerror="this.onerror=null; this.src='/sounds/win.mp3';"></audio>
-    <audio id="bgm" src="sounds/background.mp3" preload="auto" loop playsinline webkit-playsinline muted onerror="this.onerror=null; this.src='/sounds/background.mp3';"></audio>
+    <!-- Simple audio container for UI sounds -->
+    <div id="audio-container">
+        <!-- Audio files with fallback paths for Vercel, optimized for iOS -->
+        <audio id="spin-sound" src="sounds/spin.mp3" preload="auto" playsinline="true" webkit-playsinline="true" muted onerror="this.onerror=null; this.src='/sounds/spin.mp3';"></audio>
+        <audio id="win-sound" src="sounds/win.mp3" preload="auto" playsinline="true" webkit-playsinline="true" muted onerror="this.onerror=null; this.src='/sounds/win.mp3';"></audio>
+        <audio id="bgm" src="sounds/background.mp3" preload="auto" loop playsinline="true" webkit-playsinline="true" muted onerror="this.onerror=null; this.src='/sounds/background.mp3';"></audio>
+    </div>
     
+    <!-- Audio unlock button (hidden but necessary for iOS) -->
+    <button id="audio-unlock" style="position: absolute; opacity: 0; width: 0; height: 0;">Enable Sound</button>
+    
+    <!-- iOS audio fix script - must be loaded before main script -->
+    <script src="ios-audio-fix.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
