@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const spinButton = document.getElementById('spin-button');
     const resetButton = document.getElementById('reset-button');
     const confettiContainer = document.getElementById('confetti-container');
+    const princessContainer = document.getElementById('princess-container');
     const audioPermissionMessage = document.getElementById('audio-permission');
     const winsCountElement = document.getElementById('wins-count');
     
@@ -70,9 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
             currentItems[index] = randomItem;
         });
         
-        // Clear any previous confetti
+        // Clear any previous confetti and princess animation
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
+        princessContainer.classList.add('hidden');
         
         // Show audio instructions for mobile devices
         if (isIOS || isAndroid) {
@@ -243,6 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
         spinButton.disabled = true;
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
+        princessContainer.classList.add('hidden');
         
         // Initialize audio if needed and play spin sound
         if (!audioInitialized) {
@@ -378,6 +381,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show confetti
         createConfetti();
         
+        // Display princess animation
+        showPrincessAnimation();
+        
         // Make slots bounce to celebrate
         slots.forEach(slot => {
             slot.parentElement.style.animation = 'bounce 0.5s ease-in-out 3';
@@ -385,24 +391,34 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add jackpot speech after a short delay
         setTimeout(() => {
-            // Create more exciting congratulations text based on win count
-            let congratsText = '';
-            
-            if (winCount === 1) {
-                congratsText = `HOORAY! You got three ${currentItems[0].name}s! WOW! You're AWESOME! That's your FIRST WIN!`;
-            } else if (winCount === 5) {
-                congratsText = `AMAZING! Five wins! YOU ARE A CHAMPION! You got three ${currentItems[0].name}s! HIGH FIVE!`;
-            } else if (winCount === 10) {
-                congratsText = `TEN WINS! YOU ARE INCREDIBLE! You're the ${currentItems[0].name} MASTER! SPECTACULAR!`;
-            } else {
-                congratsText = `HOORAY! You got three ${currentItems[0].name}s! That's ${winCount} wins! WOW! You're SUPER AWESOME! That's AMAZING!`;
-            }
+            // Simple congratulation message
+            const congratsText = "Good job, you win!";
             
             const utterance = new SpeechSynthesisUtterance(congratsText);
             utterance.rate = 0.9;
             utterance.pitch = 1.3;
             window.speechSynthesis.speak(utterance);
         }, 1500);
+    }
+    
+    // Show princess animation
+    function showPrincessAnimation() {
+        // Clear any previous animation
+        princessContainer.innerHTML = '';
+        
+        // Create princess character
+        const princessChar = document.createElement('div');
+        princessChar.className = 'princess-character';
+        princessChar.textContent = '👸';
+        princessContainer.appendChild(princessChar);
+        
+        // Show the container
+        princessContainer.classList.remove('hidden');
+        
+        // Hide the container after animation completes
+        setTimeout(() => {
+            princessContainer.classList.add('hidden');
+        }, 3000);
     }
     
     // Create confetti effect
@@ -597,6 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
         spinButton.disabled = false;
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
+        princessContainer.classList.add('hidden');
         
         // Reset win counter
         winCount = 0;
