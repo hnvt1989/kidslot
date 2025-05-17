@@ -1,12 +1,10 @@
 {
-  "version": 2,
-  "public": true,
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "github": {
-    "silent": true
-  },
+  "framework": null,
+  "buildCommand": null,
+  "devCommand": null,
+  "installCommand": null,
+  "outputDirectory": ".",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/" }
   ]
 }

@@ -1,0 +1,12 @@
+# Netlify configuration file
+
+# Build settings
+[build]
+  # No build command needed
+  publish = "."
+
+# Redirect all routes to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

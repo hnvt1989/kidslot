@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "WebFetch(domain:pixabay.com)",
+      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "Bash(chmod:*)"
+    ],
+    "deny": []
+  }
+}

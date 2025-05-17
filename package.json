@@ -2,13 +2,9 @@
   "name": "kidslot",
   "version": "1.0.0",
   "description": "A fun and colorful slot machine game designed for kids",
-  "main": "index.html",
+  "private": true,
   "scripts": {
-    "build": "./build.sh",
-    "vercel-build": "./build.sh",
-    "start": "npx serve dist"
-  },
-  "devDependencies": {
-    "serve": "^14.0.0"
+    "start": "npx serve",
+    "vercel-build": "echo 'No build step required'"
   }
 }
