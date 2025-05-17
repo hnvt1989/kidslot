@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids Slot Machine</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Fun Animal Slots</h1>
+        
+        <div class="slot-machine">
+            <div class="slots">
+                <div class="slot" id="slot1">
+                    <div class="slot-inner"></div>
+                </div>
+                <div class="slot" id="slot2">
+                    <div class="slot-inner"></div>
+                </div>
+                <div class="slot" id="slot3">
+                    <div class="slot-inner"></div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="spin-button">SPIN</button>
+                <button id="reset-button">PLAY AGAIN</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="confetti-container" class="hidden"></div>
+    
+    <audio id="spin-sound" src="sounds/spin.mp3" preload="auto"></audio>
+    <audio id="win-sound" src="sounds/win.mp3" preload="auto"></audio>
+    <audio id="bgm" src="sounds/background.mp3" preload="auto" loop></audio>
+    
+    <script src="script.js"></script>
+</body>
+</html>

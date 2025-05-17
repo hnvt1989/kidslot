@@ -1,0 +1,152 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+}
+
+body {
+    background-color: #fcf4d9;
+    background-image: linear-gradient(45deg, #fcf4d9 0%, #ffcad4 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    text-align: center;
+    width: 100%;
+    max-width: 800px;
+}
+
+h1 {
+    color: #ff6b6b;
+    font-size: 3rem;
+    margin-bottom: 2rem;
+    text-shadow: 3px 3px 0 #ffd166;
+}
+
+.slot-machine {
+    background-color: #8bd3dd;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2), inset 0 0 0 10px #4ea8de;
+}
+
+.slots {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 2rem;
+}
+
+.slot {
+    width: 150px;
+    height: 150px;
+    background-color: white;
+    border-radius: 15px;
+    overflow: hidden;
+    border: 5px solid #ffd166;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.slot-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 80px;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+button {
+    padding: 1rem 2rem;
+    font-size: 1.5rem;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+#spin-button {
+    background-color: #ff6b6b;
+    color: white;
+    font-weight: bold;
+}
+
+#reset-button {
+    background-color: #4ea8de;
+    color: white;
+}
+
+button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Animation for spinning */
+@keyframes spin {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-1000%); }
+}
+
+.spinning .slot-inner {
+    animation: spin 0.5s linear infinite;
+}
+
+/* Confetti container */
+#confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+    .slots {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .slot {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .slot-inner {
+        font-size: 60px;
+    }
+    
+    button {
+        padding: 0.75rem 1.5rem;
+        font-size: 1.25rem;
+    }
+}
