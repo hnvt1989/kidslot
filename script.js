@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const bgm = document.getElementById('bgm');
     const spinningSound = document.getElementById('spinning-sound');
     
+    // Audio context for generating sounds
+    let audioContext;
+    
     // Audio initialization state
     let audioInitialized = false;
     
@@ -136,18 +139,24 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Initializing audio...");
         
         // Create a short silent sound and play it to initialize audio context
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) {
-            const audioContext = new AudioContext();
+        const AudioContextGlobal = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextGlobal && !audioContext) { // Initialize only once
+            audioContext = new AudioContextGlobal();
+            
+            // Resume context if it's in a suspended state (common in some browsers)
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
             const gainNode = audioContext.createGain();
             gainNode.gain.value = 0; // Silent
             gainNode.connect(audioContext.destination);
             
-            // Create and play a short sound
+            // Create and play a short sound to ensure context is active
             const oscillator = audioContext.createOscillator();
             oscillator.connect(gainNode);
             oscillator.start();
-            oscillator.stop(0.001);
+            oscillator.stop(audioContext.currentTime + 0.001); // Stop almost immediately
         }
         
         // Try to initialize speech synthesis
@@ -350,14 +359,69 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Check the result
     function checkResult() {
-        // Speak the result
+        let isNearMiss = false;
+        const s1 = currentItems[0].name;
+        const s2 = currentItems[1].name;
+        const s3 = currentItems[2].name;
+
+        // Check for near-miss scenarios
+        if (s1 === s2 && s1 !== s3) { // A-A-B
+            isNearMiss = true;
+            triggerNearMissEffect([slots[2].parentElement]); // Highlight the 3rd slot
+        } else if (s1 === s3 && s1 !== s2) { // A-B-A
+            isNearMiss = true;
+            triggerNearMissEffect([slots[1].parentElement]); // Highlight the 2nd slot
+        } else if (s2 === s3 && s1 !== s2) { // B-A-A
+            isNearMiss = true;
+            triggerNearMissEffect([slots[0].parentElement]); // Highlight the 1st slot
+        }
+
+        // Speak the result (always, but near-miss sound/speech might play first if applicable)
         speakResult();
         
         // Check for jackpot (all items match)
-        if (currentItems[0].name === currentItems[1].name && 
-            currentItems[1].name === currentItems[2].name) {
+        if (s1 === s2 && s2 === s3) {
             celebrate();
+        } else if (isNearMiss) {
+            // Play near-miss sound and speech only if it's not a full win
+            playNearMissSound();
+            setTimeout(() => {
+                const nearMissPhrases = ["So close!", "Almost!", "Just missed it!"];
+                const randomPhrase = nearMissPhrases[Math.floor(Math.random() * nearMissPhrases.length)];
+                const utterance = new SpeechSynthesisUtterance(randomPhrase);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }, 300); // Delay to allow shake animation to be noticed
         }
+    }
+
+    function triggerNearMissEffect(mismatchedSlots) {
+        mismatchedSlots.forEach(slotElement => {
+            slotElement.classList.add('slot-near-miss');
+            setTimeout(() => {
+                slotElement.classList.remove('slot-near-miss');
+            }, 500); // Duration of the shake animation
+        });
+    }
+
+    // Function to play a near-miss sound
+    function playNearMissSound() {
+        if (!audioContext || !audioInitialized) return;
+
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.type = 'triangle'; // A slightly softer sound than sine
+        oscillator.frequency.setValueAtTime(330, audioContext.currentTime); // E4 note
+        gainNode.gain.setValueAtTime(0.08, audioContext.currentTime); // Softer volume
+
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.2); // Slightly longer decay
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.2);
     }
     
     // Speak the results using speech synthesis
@@ -409,9 +473,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Display princess animation
         showPrincessAnimation();
         
-        // Make slots bounce to celebrate
-        slots.forEach(slot => {
-            slot.parentElement.style.animation = 'bounce 0.5s ease-in-out 3';
+        // Make slots bounce to celebrate and highlight them
+        slots.forEach(slotElement => { // slotElement is actually slot-inner
+            const parentSlot = slotElement.parentElement;
+            if (parentSlot) {
+                parentSlot.classList.add('slot-win');
+                // Remove the class after the animation duration (1.5s)
+                setTimeout(() => {
+                    parentSlot.classList.remove('slot-win');
+                }, 1500);
+            }
         });
         
         // Add jackpot speech after a short delay
@@ -489,7 +560,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const emojis = [
                     '🎉', '🎊', '🎈', '🎂', '🎁', '🥳', '😃', '👏', '💯', '🦄', '🌈',
                     '🍭', '🍬', '🍫', '🍦', '🧸', '🎮', '🏆', '🥇', '🪄', '✨', '💫', '🎯',
-                    '🦸‍♀️', '🧜‍♀️', '👸', '🧚', '🦹‍♂️', '🧙‍♂️', '🦁', '🐱', '🐶', '🐼', '🦊'
+                    '🦸‍♀️', '🧜‍♀️', '👸', '🧚', '🦹‍♂️', '🧙‍♂️', '🦁', '🐱', '🐶', '🐼', '🦊',
+                    '💎', '👑', '💖', '🤩', '🌟' // Added new emojis
                 ];
                 const emoji = emojis[Math.floor(Math.random() * emojis.length)];
                 confetti.style.fontSize = `${Math.random() * 30 + 20}px`; // Larger emojis
@@ -649,14 +721,95 @@ document.addEventListener('DOMContentLoaded', () => {
         winsCountElement.style.fontSize = '';
         
         // Reset slot animations
-        slots.forEach(slot => {
-            slot.parentElement.style.animation = 'none';
+        slots.forEach(slotElement => {
+            const parentSlot = slotElement.parentElement;
+            if (parentSlot) {
+                parentSlot.classList.remove('slot-win'); // Ensure win class is removed on reset
+                parentSlot.style.animation = 'none'; // Remove bounce animation
+            }
         });
         
         // Set new random items
-        slots.forEach((slot, index) => {
+        slots.forEach((slotElement, index) => {
             const randomItem = getRandomItem();
-            slot.textContent = randomItem.emoji;
+            slotElement.textContent = randomItem.emoji;
+            currentItems[index] = randomItem;
+        });
+        
+        // Play a reset sound effect to make it fun
+        if (spinSound && spinSound.play) {
+            spinSound.currentTime = 0;
+            spinSound.muted = false;
+            spinSound.volume = 0.5;
+            spinSound.play().catch(err => console.log('Could not play spin sound', err));
+        }
+        
+        // Add a fun "reset" speech
+        setTimeout(() => {
+            const resetText = "Let's play again! Good luck!";
+            const utterance = new SpeechSynthesisUtterance(resetText);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.2;
+            window.speechSynthesis.speak(utterance);
+        }, 300);
+    });
+
+    // Function to play a click sound
+    function playClickSound() {
+        if (!audioContext || !audioInitialized) return;
+
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.type = 'sine'; // A simple sine wave for a click
+        oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A4 note, adjust for desired pitch
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Start with low volume
+
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.1); // Quick decay
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+    }
+    
+    // Event listeners
+    spinButton.addEventListener('click', () => {
+        playClickSound();
+        spin();
+    });
+    
+    resetButton.addEventListener('click', () => {
+        playClickSound();
+        // Reset game state and start fresh
+        window.speechSynthesis.cancel(); // Cancel any ongoing speech
+        isSpinning = false;
+        spinButton.disabled = false;
+        confettiContainer.classList.add('hidden');
+        confettiContainer.innerHTML = '';
+        princessContainer.classList.add('hidden');
+        
+        // Reset win counter
+        winCount = 0;
+        winsCountElement.textContent = winCount;
+        winsCountElement.style.animation = 'none';
+        
+        // Restore normal counter style
+        winsCountElement.style.fontSize = '';
+        
+        // Reset slot animations
+        slots.forEach(slotElement => {
+            const parentSlot = slotElement.parentElement;
+            if (parentSlot) {
+                parentSlot.classList.remove('slot-win'); // Ensure win class is removed on reset
+                parentSlot.style.animation = 'none'; // Remove bounce animation
+            }
+        });
+        
+        // Set new random items
+        slots.forEach((slotElement, index) => {
+            const randomItem = getRandomItem();
+            slotElement.textContent = randomItem.emoji;
             currentItems[index] = randomItem;
         });
         
