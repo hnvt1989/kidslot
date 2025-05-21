@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const bgm = document.getElementById('bgm');
     const spinningSound = document.getElementById('spinning-sound');
     
+    // Audio context for generating sounds
+    let audioContext;
+    
     // Audio initialization state
     let audioInitialized = false;
     
@@ -62,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Game state
     let isSpinning = false;
     let currentItems = Array(3).fill(null);
+    let slotIntervals = []; // To store interval IDs for each slot
     
     // Initialize the game
     function initGame() {
@@ -136,18 +140,24 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Initializing audio...");
         
         // Create a short silent sound and play it to initialize audio context
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) {
-            const audioContext = new AudioContext();
+        const AudioContextGlobal = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextGlobal && !audioContext) { // Initialize only once
+            audioContext = new AudioContextGlobal();
+            
+            // Resume context if it's in a suspended state (common in some browsers)
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
             const gainNode = audioContext.createGain();
             gainNode.gain.value = 0; // Silent
             gainNode.connect(audioContext.destination);
             
-            // Create and play a short sound
+            // Create and play a short sound to ensure context is active
             const oscillator = audioContext.createOscillator();
             oscillator.connect(gainNode);
             oscillator.start();
-            oscillator.stop(0.001);
+            oscillator.stop(audioContext.currentTime + 0.001); // Stop almost immediately
         }
         
         // Try to initialize speech synthesis
@@ -269,12 +279,23 @@ document.addEventListener('DOMContentLoaded', () => {
             spinningSound.muted = false;
             spinningSound.volume = 0.5;
             spinningSound.loop = true; // Make it loop while spinning
+            spinningSound.playbackRate = 0.8; // Start slower for "winding up" effect
             spinningSound.play().catch(err => console.log('Could not play spinning sound', err));
+            setTimeout(() => {
+                if (isSpinning && spinningSound && !spinningSound.paused) { // Check if still spinning and sound is playing
+                    spinningSound.playbackRate = 1.2; // Ramp up to a slightly faster speed
+                }
+            }, 200); // Adjust timing as needed
         }
         
-        // Add spinning class
-        slots.forEach(slot => {
+        // Add spinning class and start emoji cycling
+        slots.forEach((slot, i) => {
             slot.parentElement.classList.add('spinning');
+            // Start rapid emoji cycling
+            slotIntervals[i] = setInterval(() => {
+                const randomItem = items[Math.floor(Math.random() * items.length)];
+                slot.textContent = randomItem.emoji;
+            }, 75); // Adjust interval for speed, 75ms is a good starting point
         });
         
         // Set different timeouts for each slot
@@ -289,7 +310,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Stop each slot at different times
         slots.forEach((slot, index) => {
             setTimeout(() => {
-                // Stop spinning
+                // Stop the rapid cycling for this slot
+                clearInterval(slotIntervals[index]);
+                
+                // Stop spinning visual effect (like blur)
                 slot.parentElement.classList.remove('spinning');
                 
                 if (isWinningRound) {
@@ -327,37 +351,156 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Check if all slots have stopped
                 if (index === slots.length - 1) {
                     setTimeout(() => {
+                        // "Slowing down" effect for spinning sound
+                        if (spinningSound && !spinningSound.paused) {
+                            spinningSound.playbackRate = 0.8; // Start slowing down
+                            // Optional: A further step down if desired, e.g., after 100-150ms
+                            // setTimeout(() => { if (spinningSound && !spinningSound.paused) spinningSound.playbackRate = 0.6; }, 150);
+                        }
+
                         // Stop the spinning sound
                         if (spinningSound && spinningSound.pause) {
                             spinningSound.pause();
                             spinningSound.currentTime = 0;
                             spinningSound.loop = false;
+                            spinningSound.playbackRate = 1.0; // Reset playback rate for next spin
                         }
                         
                         checkResult();
                         isSpinning = false;
                         
-                        // Keep buttons disabled for 6 seconds after spin completes
+                        // Keep buttons disabled for ~15.5 seconds after spin completes (to cover confetti + drumroll)
                         setTimeout(() => {
                             spinButton.disabled = false;
                             resetButton.disabled = false;
-                        }, 6000);
+                        }, 15500); 
                     }, 500);
                 }
             }, stopTimes[index]);
         });
     }
+
+    // Function to play a drumroll sound
+    function playDrumrollSound() {
+        if (!audioContext || !audioInitialized) return;
+
+        const now = audioContext.currentTime;
+        const duration = 5; // 5 seconds
+        const sampleRate = audioContext.sampleRate;
+        const bufferSize = sampleRate * duration;
+        const buffer = audioContext.createBuffer(1, bufferSize, sampleRate);
+        const output = buffer.getChannelData(0);
+
+        // Fill buffer with white noise
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+
+        const whiteNoiseSource = audioContext.createBufferSource();
+        whiteNoiseSource.buffer = buffer;
+
+        // Create a bandpass filter to make it sound more like a snare drum roll
+        const bandpass = audioContext.createBiquadFilter();
+        bandpass.type = "bandpass";
+        bandpass.frequency.setValueAtTime(1500, now); // Center frequency, adjust for desired tone
+        bandpass.Q.setValueAtTime(1, now); // Quality factor
+
+        const gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(0, now); // Start silent
+
+        // Connect nodes: noise -> filter -> gain -> destination
+        whiteNoiseSource.connect(bandpass);
+        bandpass.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        // Drumroll envelope
+        // Quick attack
+        gainNode.gain.linearRampToValueAtTime(0.5, now + 0.1); 
+        // Crescendo for the first 2 seconds
+        gainNode.gain.linearRampToValueAtTime(1, now + 2); 
+        // Hold for 2 seconds
+        gainNode.gain.setValueAtTime(1, now + 4); 
+        // Fade out in the last second
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        whiteNoiseSource.start(now);
+        whiteNoiseSource.stop(now + duration); // Stop after 5 seconds
+        
+        console.log("Drumroll playing...");
+        whiteNoiseSource.onended = () => {
+            console.log("Drumroll finished.");
+            // Disconnect nodes to free up resources
+            whiteNoiseSource.disconnect();
+            bandpass.disconnect();
+            gainNode.disconnect();
+        };
+    }
     
     // Check the result
     function checkResult() {
-        // Speak the result
+        let isNearMiss = false;
+        const s1 = currentItems[0].name;
+        const s2 = currentItems[1].name;
+        const s3 = currentItems[2].name;
+
+        // Check for near-miss scenarios
+        if (s1 === s2 && s1 !== s3) { // A-A-B
+            isNearMiss = true;
+            triggerNearMissEffect([slots[2].parentElement]); // Highlight the 3rd slot
+        } else if (s1 === s3 && s1 !== s2) { // A-B-A
+            isNearMiss = true;
+            triggerNearMissEffect([slots[1].parentElement]); // Highlight the 2nd slot
+        } else if (s2 === s3 && s1 !== s2) { // B-A-A
+            isNearMiss = true;
+            triggerNearMissEffect([slots[0].parentElement]); // Highlight the 1st slot
+        }
+
+        // Speak the result (always, but near-miss sound/speech might play first if applicable)
         speakResult();
         
         // Check for jackpot (all items match)
-        if (currentItems[0].name === currentItems[1].name && 
-            currentItems[1].name === currentItems[2].name) {
+        if (s1 === s2 && s2 === s3) {
             celebrate();
+        } else if (isNearMiss) {
+            // Play near-miss sound and speech only if it's not a full win
+            playNearMissSound();
+            setTimeout(() => {
+                const nearMissPhrases = ["So close!", "Almost!", "Just missed it!"];
+                const randomPhrase = nearMissPhrases[Math.floor(Math.random() * nearMissPhrases.length)];
+                const utterance = new SpeechSynthesisUtterance(randomPhrase);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.1;
+                // window.speechSynthesis.speak(utterance); // Near-miss speech disabled
+            }, 300); // Delay to allow shake animation to be noticed
         }
+    }
+
+    function triggerNearMissEffect(mismatchedSlots) {
+        mismatchedSlots.forEach(slotElement => {
+            slotElement.classList.add('slot-near-miss');
+            setTimeout(() => {
+                slotElement.classList.remove('slot-near-miss');
+            }, 500); // Duration of the shake animation
+        });
+    }
+
+    // Function to play a near-miss sound
+    function playNearMissSound() {
+        if (!audioContext || !audioInitialized) return;
+
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.type = 'triangle'; // A slightly softer sound than sine
+        oscillator.frequency.setValueAtTime(330, audioContext.currentTime); // E4 note
+        gainNode.gain.setValueAtTime(0.08, audioContext.currentTime); // Softer volume
+
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.2); // Slightly longer decay
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.2);
     }
     
     // Speak the results using speech synthesis
@@ -366,21 +509,58 @@ document.addEventListener('DOMContentLoaded', () => {
         const utterance = new SpeechSynthesisUtterance(resultText);
         utterance.rate = 0.9; // Slightly slower for kids
         utterance.pitch = 1.2; // Slightly higher pitch for kids
-        window.speechSynthesis.speak(utterance);
+        // window.speechSynthesis.speak(utterance); // Disabled result narration
     }
     
+    // Function to play a magical win sound
+    function playMagicalWinSound() {
+        if (!audioContext || !audioInitialized) return;
+
+        const now = audioContext.currentTime;
+        const fundamental = 440; // A4
+        const overtoneRatios = [1, 1.5, 2, 2.5]; // Harmonic series for a richer tone
+        const overallGain = 0.1; // Keep it subtle
+
+        // Create a sequence of bell-like sounds
+        const notes = [
+            fundamental * 2, // A5
+            fundamental * 2 * (5/4), // C#6 (major third above A5)
+            fundamental * 2 * (3/2) * 2, // E6 (perfect fifth above A5, an octave higher)
+        ];
+
+        notes.forEach((freq, index) => {
+            const osc = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + index * 0.1); // Stagger start times
+            
+            gainNode.gain.setValueAtTime(0, now + index * 0.1);
+            gainNode.gain.linearRampToValueAtTime(overallGain * 0.5, now + index * 0.1 + 0.05); // Quick attack
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, now + index * 0.1 + 0.5); // Longer decay for chime
+
+            osc.start(now + index * 0.1);
+            osc.stop(now + index * 0.1 + 0.5);
+        });
+    }
+
     // Celebration for jackpot
     function celebrate() {
-        // Initialize audio if needed and play win sound
+        // Initialize audio if needed
         if (!audioInitialized) {
             initializeAudio();
         }
+
+        playMagicalWinSound(); // Play the new magical sound
         
-        // Play win sound
+        // Play existing win sound (adjust volume if needed)
         if (winSound && winSound.play) {
             winSound.currentTime = 0;
             winSound.muted = false;
-            winSound.volume = 1.0; // Ensure full volume for celebration
+            winSound.volume = 0.7; // Slightly reduced volume to blend with new sound
             winSound.play().catch(err => console.log('Could not play win sound', err));
         }
         
@@ -406,44 +586,58 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show confetti
         createConfetti();
         
-        // Display princess animation
-        showPrincessAnimation();
+        // Display ice magic animation
+        showIceMagicAnimation();
         
-        // Make slots bounce to celebrate
-        slots.forEach(slot => {
-            slot.parentElement.style.animation = 'bounce 0.5s ease-in-out 3';
+        // Make slots bounce to celebrate and highlight them
+        slots.forEach(slotElement => { // slotElement is actually slot-inner
+            const parentSlot = slotElement.parentElement;
+            if (parentSlot) {
+                parentSlot.classList.add('slot-win');
+                // Remove the class after the animation duration (1.5s)
+                setTimeout(() => {
+                    parentSlot.classList.remove('slot-win');
+                }, 1500);
+            }
         });
         
         // Add jackpot speech after a short delay
-        setTimeout(() => {
-            // Simple congratulation message
-            const congratsText = "Good job, you win!";
+        // setTimeout(() => {
+        //     // Simple congratulation message
+        //     const congratsText = "Good job, you win!";
             
-            const utterance = new SpeechSynthesisUtterance(congratsText);
-            utterance.rate = 0.9;
-            utterance.pitch = 1.3;
-            window.speechSynthesis.speak(utterance);
-        }, 1500);
+        //     const utterance = new SpeechSynthesisUtterance(congratsText);
+        //     utterance.rate = 0.9;
+        //     utterance.pitch = 1.3;
+        //     window.speechSynthesis.speak(utterance);
+        // }, 1500); // Speech for win disabled
+
+        // Schedule the drumroll to play after the main celebration effects
+        setTimeout(() => {
+            if (audioInitialized && audioContext) { // Ensure audio is ready
+                playDrumrollSound();
+            }
+        }, 10000); // 10 seconds delay for current effects to mostly finish
     }
     
-    // Show princess animation
-    function showPrincessAnimation() {
+    // Show ice magic animation
+    function showIceMagicAnimation() {
         // Clear any previous animation
-        princessContainer.innerHTML = '';
+        princessContainer.innerHTML = ''; // princessContainer ID is still used for the container
         
-        // Create princess character
-        const princessChar = document.createElement('div');
-        princessChar.className = 'princess-character';
-        princessChar.textContent = '👸';
-        princessContainer.appendChild(princessChar);
+        // Create ice magic character (snowflake)
+        const iceMagicChar = document.createElement('div');
+        iceMagicChar.className = 'ice-magic-animation'; // Use the new CSS class
+        iceMagicChar.textContent = '❄️'; // Snowflake emoji
+        princessContainer.appendChild(iceMagicChar);
         
         // Show the container
         princessContainer.classList.remove('hidden');
         
-        // Hide the container after animation completes
+        // Hide the container after animation completes (2.5s, matches CSS)
         setTimeout(() => {
             princessContainer.classList.add('hidden');
-        }, 3000);
+        }, 2500); 
     }
     
     // Create confetti effect
@@ -489,7 +683,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const emojis = [
                     '🎉', '🎊', '🎈', '🎂', '🎁', '🥳', '😃', '👏', '💯', '🦄', '🌈',
                     '🍭', '🍬', '🍫', '🍦', '🧸', '🎮', '🏆', '🥇', '🪄', '✨', '💫', '🎯',
-                    '🦸‍♀️', '🧜‍♀️', '👸', '🧚', '🦹‍♂️', '🧙‍♂️', '🦁', '🐱', '🐶', '🐼', '🦊'
+                    '🦸‍♀️', '🧜‍♀️', '👸', '🧚', '🦹‍♂️', '🧙‍♂️', '🦁', '🐱', '🐶', '🐼', '🦊',
+                    '💎', '👑', '💖', '🤩', '🌟' // Added new emojis
                 ];
                 const emoji = emojis[Math.floor(Math.random() * emojis.length)];
                 confetti.style.fontSize = `${Math.random() * 30 + 20}px`; // Larger emojis
@@ -610,17 +805,22 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Get random bright color
     function getRandomColor(bright = false) {
-        // Original color palette
-        const colors = [
-            '#FF6B6B', '#FFD166', '#06D6A0', '#118AB2', '#073B4C',
-            '#F72585', '#7209B7', '#3A0CA3', '#4CC9F0', '#4361EE'
+        // Frozen-inspired color palette
+        const colors = [ // Standard confetti colors
+            '#ADD8E6', // Light Blue
+            '#B0E0E6', // Powder Blue
+            '#AFEEEE', // Pale Turquoise
+            '#C0C0C0', // Silver
+            '#F0F8FF'  // Alice Blue
         ];
         
-        // Brighter, more vibrant colors for special effects
+        // Brighter, more vibrant colors for special effects like sparkles
         const brightColors = [
-            '#FF0000', '#FF9500', '#FFFF00', '#00FF00', '#00FFFF', 
-            '#0000FF', '#9500FF', '#FF00FF', '#FF007B', '#00E5FF',
-            '#FFA6A6', '#FFE066', '#A6FFE8', '#A6C4FF', '#D5A6FF'
+            '#87CEEB', // Sky Blue
+            '#FFFFFF', // White
+            '#E6E6FA', // Lavender (for a touch of magic)
+            '#B4D8E7', // Light Steel Blue
+            '#F0FFFF'  // Azure
         ];
         
         return bright ? 
@@ -632,6 +832,97 @@ document.addEventListener('DOMContentLoaded', () => {
     spinButton.addEventListener('click', spin);
     
     resetButton.addEventListener('click', () => {
+        playClickSound();
+        // Reset game state and start fresh
+        window.speechSynthesis.cancel(); // Cancel any ongoing speech
+        
+        // Clear any active spinning intervals
+        slotIntervals.forEach(clearInterval);
+        slotIntervals = [];
+
+        isSpinning = false;
+        spinButton.disabled = false;
+        confettiContainer.classList.add('hidden');
+        confettiContainer.innerHTML = '';
+        princessContainer.classList.add('hidden');
+        
+        // Reset win counter
+        winCount = 0;
+        winsCountElement.textContent = winCount;
+        winsCountElement.style.animation = 'none';
+        
+        // Restore normal counter style
+        winsCountElement.style.fontSize = '';
+        
+        // Reset slot animations
+        slots.forEach(slotElement => {
+            const parentSlot = slotElement.parentElement;
+            if (parentSlot) {
+                parentSlot.classList.remove('slot-win'); // Ensure win class is removed on reset
+                parentSlot.style.animation = 'none'; // Remove bounce animation
+            }
+        });
+        
+        // Set new random items
+        slots.forEach((slotElement, index) => {
+            const randomItem = getRandomItem();
+            slotElement.textContent = randomItem.emoji;
+            currentItems[index] = randomItem;
+        });
+        
+        // Play a reset sound effect to make it fun
+        if (spinSound && spinSound.play) {
+            spinSound.currentTime = 0;
+            spinSound.muted = false;
+            spinSound.volume = 0.5;
+            spinSound.play().catch(err => console.log('Could not play spin sound', err));
+        }
+
+        // Ensure spinningSound is reset if it was playing
+        if (spinningSound) {
+            spinningSound.pause();
+            spinningSound.currentTime = 0;
+            spinningSound.loop = false;
+            spinningSound.playbackRate = 1.0;
+        }
+        
+        // Add a fun "reset" speech
+        // setTimeout(() => {
+        //     const resetText = "Let's play again! Good luck!";
+        //     const utterance = new SpeechSynthesisUtterance(resetText);
+        //     utterance.rate = 1.0;
+        //     utterance.pitch = 1.2;
+        //     window.speechSynthesis.speak(utterance); // Reset speech disabled
+        // }, 300);
+    });
+
+    // Function to play a click sound
+    function playClickSound() {
+        if (!audioContext || !audioInitialized) return;
+
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.type = 'sine'; // A simple sine wave for a click
+        oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A4 note, adjust for desired pitch
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Start with low volume
+
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.1); // Quick decay
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+    }
+    
+    // Event listeners
+    spinButton.addEventListener('click', () => {
+        playClickSound();
+        spin();
+    });
+    
+    resetButton.addEventListener('click', () => {
+        playClickSound();
         // Reset game state and start fresh
         window.speechSynthesis.cancel(); // Cancel any ongoing speech
         isSpinning = false;
@@ -649,14 +940,18 @@ document.addEventListener('DOMContentLoaded', () => {
         winsCountElement.style.fontSize = '';
         
         // Reset slot animations
-        slots.forEach(slot => {
-            slot.parentElement.style.animation = 'none';
+        slots.forEach(slotElement => {
+            const parentSlot = slotElement.parentElement;
+            if (parentSlot) {
+                parentSlot.classList.remove('slot-win'); // Ensure win class is removed on reset
+                parentSlot.style.animation = 'none'; // Remove bounce animation
+            }
         });
         
         // Set new random items
-        slots.forEach((slot, index) => {
+        slots.forEach((slotElement, index) => {
             const randomItem = getRandomItem();
-            slot.textContent = randomItem.emoji;
+            slotElement.textContent = randomItem.emoji;
             currentItems[index] = randomItem;
         });
         
@@ -669,13 +964,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Add a fun "reset" speech
-        setTimeout(() => {
-            const resetText = "Let's play again! Good luck!";
-            const utterance = new SpeechSynthesisUtterance(resetText);
-            utterance.rate = 1.0;
-            utterance.pitch = 1.2;
-            window.speechSynthesis.speak(utterance);
-        }, 300);
+        // setTimeout(() => {
+        //     const resetText = "Let's play again! Good luck!";
+        //     const utterance = new SpeechSynthesisUtterance(resetText);
+        //     utterance.rate = 1.0;
+        //     utterance.pitch = 1.2;
+        //     window.speechSynthesis.speak(utterance); // Reset speech disabled
+        // }, 300);
     });
     
     // Handle user interaction to enable audio (for compatibility with all browsers)
@@ -738,4 +1033,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize the game
     initGame();
+
+    // Temporary test button for drumroll (can be removed later)
+    // const testDrumrollButton = document.createElement('button');
+    // testDrumrollButton.textContent = "Test Drumroll";
+    // testDrumrollButton.style.position = 'fixed';
+    // testDrumrollButton.style.bottom = '10px';
+    // testDrumrollButton.style.left = '10px';
+    // document.body.appendChild(testDrumrollButton);
+    // testDrumrollButton.addEventListener('click', () => {
+    //     if (!audioInitialized) initializeAudio();
+    //     playDrumrollSound();
+    // });
 });
