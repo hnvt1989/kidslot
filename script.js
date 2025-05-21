@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Game elements
     const slots = document.querySelectorAll('.slot-inner');
     const spinButton = document.getElementById('spin-button');
-    const resetButton = document.getElementById('reset-button');
     const confettiContainer = document.getElementById('confetti-container');
     const princessContainer = document.getElementById('princess-container');
     const audioPermissionMessage = document.getElementById('audio-permission');
@@ -253,9 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isSpinning) return;
         
         isSpinning = true;
-        // Disable both buttons during spin
+        // Disable spin button during spin
         spinButton.disabled = true;
-        resetButton.disabled = true;
         confettiContainer.classList.add('hidden');
         confettiContainer.innerHTML = '';
         princessContainer.classList.add('hidden');
@@ -372,8 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Keep buttons disabled for ~15.5 seconds after spin completes (to cover confetti + drumroll)
                         setTimeout(() => {
                             spinButton.disabled = false;
-                            resetButton.disabled = false;
-                        }, 15500); 
+                        }, 15500);
                     }, 500);
                 }
             }, stopTimes[index]);
@@ -831,70 +828,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listeners
     spinButton.addEventListener('click', spin);
     
-    resetButton.addEventListener('click', () => {
-        playClickSound();
-        // Reset game state and start fresh
-        window.speechSynthesis.cancel(); // Cancel any ongoing speech
-        
-        // Clear any active spinning intervals
-        slotIntervals.forEach(clearInterval);
-        slotIntervals = [];
-
-        isSpinning = false;
-        spinButton.disabled = false;
-        confettiContainer.classList.add('hidden');
-        confettiContainer.innerHTML = '';
-        princessContainer.classList.add('hidden');
-        
-        // Reset win counter
-        winCount = 0;
-        winsCountElement.textContent = winCount;
-        winsCountElement.style.animation = 'none';
-        
-        // Restore normal counter style
-        winsCountElement.style.fontSize = '';
-        
-        // Reset slot animations
-        slots.forEach(slotElement => {
-            const parentSlot = slotElement.parentElement;
-            if (parentSlot) {
-                parentSlot.classList.remove('slot-win'); // Ensure win class is removed on reset
-                parentSlot.style.animation = 'none'; // Remove bounce animation
-            }
-        });
-        
-        // Set new random items
-        slots.forEach((slotElement, index) => {
-            const randomItem = getRandomItem();
-            slotElement.textContent = randomItem.emoji;
-            currentItems[index] = randomItem;
-        });
-        
-        // Play a reset sound effect to make it fun
-        if (spinSound && spinSound.play) {
-            spinSound.currentTime = 0;
-            spinSound.muted = false;
-            spinSound.volume = 0.5;
-            spinSound.play().catch(err => console.log('Could not play spin sound', err));
-        }
-
-        // Ensure spinningSound is reset if it was playing
-        if (spinningSound) {
-            spinningSound.pause();
-            spinningSound.currentTime = 0;
-            spinningSound.loop = false;
-            spinningSound.playbackRate = 1.0;
-        }
-        
-        // Add a fun "reset" speech
-        // setTimeout(() => {
-        //     const resetText = "Let's play again! Good luck!";
-        //     const utterance = new SpeechSynthesisUtterance(resetText);
-        //     utterance.rate = 1.0;
-        //     utterance.pitch = 1.2;
-        //     window.speechSynthesis.speak(utterance); // Reset speech disabled
-        // }, 300);
-    });
 
     // Function to play a click sound
     function playClickSound() {
@@ -921,57 +854,6 @@ document.addEventListener('DOMContentLoaded', () => {
         spin();
     });
     
-    resetButton.addEventListener('click', () => {
-        playClickSound();
-        // Reset game state and start fresh
-        window.speechSynthesis.cancel(); // Cancel any ongoing speech
-        isSpinning = false;
-        spinButton.disabled = false;
-        confettiContainer.classList.add('hidden');
-        confettiContainer.innerHTML = '';
-        princessContainer.classList.add('hidden');
-        
-        // Reset win counter
-        winCount = 0;
-        winsCountElement.textContent = winCount;
-        winsCountElement.style.animation = 'none';
-        
-        // Restore normal counter style
-        winsCountElement.style.fontSize = '';
-        
-        // Reset slot animations
-        slots.forEach(slotElement => {
-            const parentSlot = slotElement.parentElement;
-            if (parentSlot) {
-                parentSlot.classList.remove('slot-win'); // Ensure win class is removed on reset
-                parentSlot.style.animation = 'none'; // Remove bounce animation
-            }
-        });
-        
-        // Set new random items
-        slots.forEach((slotElement, index) => {
-            const randomItem = getRandomItem();
-            slotElement.textContent = randomItem.emoji;
-            currentItems[index] = randomItem;
-        });
-        
-        // Play a reset sound effect to make it fun
-        if (spinSound && spinSound.play) {
-            spinSound.currentTime = 0;
-            spinSound.muted = false;
-            spinSound.volume = 0.5;
-            spinSound.play().catch(err => console.log('Could not play spin sound', err));
-        }
-        
-        // Add a fun "reset" speech
-        // setTimeout(() => {
-        //     const resetText = "Let's play again! Good luck!";
-        //     const utterance = new SpeechSynthesisUtterance(resetText);
-        //     utterance.rate = 1.0;
-        //     utterance.pitch = 1.2;
-        //     window.speechSynthesis.speak(utterance); // Reset speech disabled
-        // }, 300);
-    });
     
     // Handle user interaction to enable audio (for compatibility with all browsers)
     function setupAudioEventListeners() {
