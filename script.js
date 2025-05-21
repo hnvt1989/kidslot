@@ -456,18 +456,55 @@ document.addEventListener('DOMContentLoaded', () => {
         // window.speechSynthesis.speak(utterance); // Disabled result narration
     }
     
+    // Function to play a magical win sound
+    function playMagicalWinSound() {
+        if (!audioContext || !audioInitialized) return;
+
+        const now = audioContext.currentTime;
+        const fundamental = 440; // A4
+        const overtoneRatios = [1, 1.5, 2, 2.5]; // Harmonic series for a richer tone
+        const overallGain = 0.1; // Keep it subtle
+
+        // Create a sequence of bell-like sounds
+        const notes = [
+            fundamental * 2, // A5
+            fundamental * 2 * (5/4), // C#6 (major third above A5)
+            fundamental * 2 * (3/2) * 2, // E6 (perfect fifth above A5, an octave higher)
+        ];
+
+        notes.forEach((freq, index) => {
+            const osc = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + index * 0.1); // Stagger start times
+            
+            gainNode.gain.setValueAtTime(0, now + index * 0.1);
+            gainNode.gain.linearRampToValueAtTime(overallGain * 0.5, now + index * 0.1 + 0.05); // Quick attack
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, now + index * 0.1 + 0.5); // Longer decay for chime
+
+            osc.start(now + index * 0.1);
+            osc.stop(now + index * 0.1 + 0.5);
+        });
+    }
+
     // Celebration for jackpot
     function celebrate() {
-        // Initialize audio if needed and play win sound
+        // Initialize audio if needed
         if (!audioInitialized) {
             initializeAudio();
         }
+
+        playMagicalWinSound(); // Play the new magical sound
         
-        // Play win sound
+        // Play existing win sound (adjust volume if needed)
         if (winSound && winSound.play) {
             winSound.currentTime = 0;
             winSound.muted = false;
-            winSound.volume = 1.0; // Ensure full volume for celebration
+            winSound.volume = 0.7; // Slightly reduced volume to blend with new sound
             winSound.play().catch(err => console.log('Could not play win sound', err));
         }
         
@@ -493,8 +530,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show confetti
         createConfetti();
         
-        // Display princess animation
-        showPrincessAnimation();
+        // Display ice magic animation
+        showIceMagicAnimation();
         
         // Make slots bounce to celebrate and highlight them
         slots.forEach(slotElement => { // slotElement is actually slot-inner
@@ -520,24 +557,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // }, 1500); // Speech for win disabled
     }
     
-    // Show princess animation
-    function showPrincessAnimation() {
+    // Show ice magic animation
+    function showIceMagicAnimation() {
         // Clear any previous animation
-        princessContainer.innerHTML = '';
+        princessContainer.innerHTML = ''; // princessContainer ID is still used for the container
         
-        // Create princess character
-        const princessChar = document.createElement('div');
-        princessChar.className = 'princess-character';
-        princessChar.textContent = '👸';
-        princessContainer.appendChild(princessChar);
+        // Create ice magic character (snowflake)
+        const iceMagicChar = document.createElement('div');
+        iceMagicChar.className = 'ice-magic-animation'; // Use the new CSS class
+        iceMagicChar.textContent = '❄️'; // Snowflake emoji
+        princessContainer.appendChild(iceMagicChar);
         
         // Show the container
         princessContainer.classList.remove('hidden');
         
-        // Hide the container after animation completes
+        // Hide the container after animation completes (2.5s, matches CSS)
         setTimeout(() => {
             princessContainer.classList.add('hidden');
-        }, 3000);
+        }, 2500); 
     }
     
     // Create confetti effect
@@ -705,17 +742,22 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Get random bright color
     function getRandomColor(bright = false) {
-        // Original color palette
-        const colors = [
-            '#FF6B6B', '#FFD166', '#06D6A0', '#118AB2', '#073B4C',
-            '#F72585', '#7209B7', '#3A0CA3', '#4CC9F0', '#4361EE'
+        // Frozen-inspired color palette
+        const colors = [ // Standard confetti colors
+            '#ADD8E6', // Light Blue
+            '#B0E0E6', // Powder Blue
+            '#AFEEEE', // Pale Turquoise
+            '#C0C0C0', // Silver
+            '#F0F8FF'  // Alice Blue
         ];
         
-        // Brighter, more vibrant colors for special effects
+        // Brighter, more vibrant colors for special effects like sparkles
         const brightColors = [
-            '#FF0000', '#FF9500', '#FFFF00', '#00FF00', '#00FFFF', 
-            '#0000FF', '#9500FF', '#FF00FF', '#FF007B', '#00E5FF',
-            '#FFA6A6', '#FFE066', '#A6FFE8', '#A6C4FF', '#D5A6FF'
+            '#87CEEB', // Sky Blue
+            '#FFFFFF', // White
+            '#E6E6FA', // Lavender (for a touch of magic)
+            '#B4D8E7', // Light Steel Blue
+            '#F0FFFF'  // Azure
         ];
         
         return bright ? 

@@ -199,7 +199,7 @@ button:active {
 
 .spinning .slot-inner {
     animation: spin 0.4s linear infinite; /* Slightly faster duration */
-    filter: blur(1.5px); /* Motion blur effect */
+    /* filter: blur(1.5px); */ /* Motion blur effect removed as JS cycling provides enough blur */
 }
 
 /* Win celebration for slots */
@@ -218,8 +218,7 @@ button:active {
 
 .slot-win {
     animation: highlight-win 1.5s ease-in-out;
-    /* Ensure original border color is restored if animation is removed before completion or for non-fill-mode */
-    border-color: #f0c400 !important; /* Use !important to override if needed, or manage class toggling carefully */
+    /* The border color will revert to the .slot style when this class is removed by JS */
 }
 
 
@@ -234,8 +233,8 @@ button:active {
     z-index: 1000;
 }
 
-/* Princess animation styles */
-#princess-container {
+/* Ice Magic animation styles */
+#princess-container { /* Keeping ID for now as JS uses it, but could be renamed */
     position: fixed;
     top: 0;
     left: 0;
@@ -248,20 +247,35 @@ button:active {
     align-items: center;
 }
 
-.princess-character {
-    font-size: 100px;
-    text-shadow: 0 0 15px #ff69b4;
-    animation: princess-dance 3s ease-in-out;
+.ice-magic-animation {
+    font-size: 150px; /* Larger snowflake */
+    color: #ADD8E6; /* Light blue */
+    text-shadow: 0 0 10px #FFFFFF, 0 0 20px #FFFFFF, 0 0 30px #87CEEB, 0 0 40px #87CEEB; /* White and sky blue glow */
+    animation: ice-magic-effect 2.5s ease-in-out;
     opacity: 0;
 }
 
-@keyframes princess-dance {
-    0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
-    20% { transform: scale(1.5) rotate(10deg); opacity: 1; }
-    40% { transform: scale(1.2) rotate(-10deg) translateY(-30px); }
-    60% { transform: scale(1.5) rotate(10deg) translateY(0); }
-    80% { transform: scale(1.2) rotate(-5deg) translateY(-20px); }
-    100% { transform: scale(3) rotate(0); opacity: 0; }
+@keyframes ice-magic-effect {
+    0% {
+        transform: scale(0.5) rotate(0deg);
+        opacity: 0;
+    }
+    25% {
+        transform: scale(1.2) rotate(45deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1) rotate(-45deg);
+        opacity: 0.8;
+    }
+    75% {
+        transform: scale(1.3) rotate(10deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0) rotate(360deg);
+        opacity: 0;
+    }
 }
 
 .hidden {
