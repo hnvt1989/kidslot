@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const utterance = new SpeechSynthesisUtterance(randomPhrase);
                 utterance.rate = 1.0;
                 utterance.pitch = 1.1;
-                window.speechSynthesis.speak(utterance);
+                // window.speechSynthesis.speak(utterance); // Near-miss speech disabled
             }, 300); // Delay to allow shake animation to be noticed
         }
     }
@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const utterance = new SpeechSynthesisUtterance(resultText);
         utterance.rate = 0.9; // Slightly slower for kids
         utterance.pitch = 1.2; // Slightly higher pitch for kids
-        window.speechSynthesis.speak(utterance);
+        // window.speechSynthesis.speak(utterance); // Disabled result narration
     }
     
     // Celebration for jackpot
@@ -509,15 +509,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // Add jackpot speech after a short delay
-        setTimeout(() => {
-            // Simple congratulation message
-            const congratsText = "Good job, you win!";
+        // setTimeout(() => {
+        //     // Simple congratulation message
+        //     const congratsText = "Good job, you win!";
             
-            const utterance = new SpeechSynthesisUtterance(congratsText);
-            utterance.rate = 0.9;
-            utterance.pitch = 1.3;
-            window.speechSynthesis.speak(utterance);
-        }, 1500);
+        //     const utterance = new SpeechSynthesisUtterance(congratsText);
+        //     utterance.rate = 0.9;
+        //     utterance.pitch = 1.3;
+        //     window.speechSynthesis.speak(utterance);
+        // }, 1500); // Speech for win disabled
     }
     
     // Show princess animation
@@ -782,13 +782,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Add a fun "reset" speech
-        setTimeout(() => {
-            const resetText = "Let's play again! Good luck!";
-            const utterance = new SpeechSynthesisUtterance(resetText);
-            utterance.rate = 1.0;
-            utterance.pitch = 1.2;
-            window.speechSynthesis.speak(utterance);
-        }, 300);
+        // setTimeout(() => {
+        //     const resetText = "Let's play again! Good luck!";
+        //     const utterance = new SpeechSynthesisUtterance(resetText);
+        //     utterance.rate = 1.0;
+        //     utterance.pitch = 1.2;
+        //     window.speechSynthesis.speak(utterance); // Reset speech disabled
+        // }, 300);
     });
 
     // Function to play a click sound
@@ -859,13 +859,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Add a fun "reset" speech
-        setTimeout(() => {
-            const resetText = "Let's play again! Good luck!";
-            const utterance = new SpeechSynthesisUtterance(resetText);
-            utterance.rate = 1.0;
-            utterance.pitch = 1.2;
-            window.speechSynthesis.speak(utterance);
-        }, 300);
+        // setTimeout(() => {
+        //     const resetText = "Let's play again! Good luck!";
+        //     const utterance = new SpeechSynthesisUtterance(resetText);
+        //     utterance.rate = 1.0;
+        //     utterance.pitch = 1.2;
+        //     window.speechSynthesis.speak(utterance); // Reset speech disabled
+        // }, 300);
     });
     
     // Handle user interaction to enable audio (for compatibility with all browsers)
