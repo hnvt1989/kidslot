@@ -369,15 +369,71 @@ document.addEventListener('DOMContentLoaded', () => {
                         checkResult();
                         isSpinning = false;
                         
-                        // Keep buttons disabled for 6 seconds after spin completes
+                        // Keep buttons disabled for ~15.5 seconds after spin completes (to cover confetti + drumroll)
                         setTimeout(() => {
                             spinButton.disabled = false;
                             resetButton.disabled = false;
-                        }, 6000);
+                        }, 15500); 
                     }, 500);
                 }
             }, stopTimes[index]);
         });
+    }
+
+    // Function to play a drumroll sound
+    function playDrumrollSound() {
+        if (!audioContext || !audioInitialized) return;
+
+        const now = audioContext.currentTime;
+        const duration = 5; // 5 seconds
+        const sampleRate = audioContext.sampleRate;
+        const bufferSize = sampleRate * duration;
+        const buffer = audioContext.createBuffer(1, bufferSize, sampleRate);
+        const output = buffer.getChannelData(0);
+
+        // Fill buffer with white noise
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+
+        const whiteNoiseSource = audioContext.createBufferSource();
+        whiteNoiseSource.buffer = buffer;
+
+        // Create a bandpass filter to make it sound more like a snare drum roll
+        const bandpass = audioContext.createBiquadFilter();
+        bandpass.type = "bandpass";
+        bandpass.frequency.setValueAtTime(1500, now); // Center frequency, adjust for desired tone
+        bandpass.Q.setValueAtTime(1, now); // Quality factor
+
+        const gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(0, now); // Start silent
+
+        // Connect nodes: noise -> filter -> gain -> destination
+        whiteNoiseSource.connect(bandpass);
+        bandpass.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        // Drumroll envelope
+        // Quick attack
+        gainNode.gain.linearRampToValueAtTime(0.5, now + 0.1); 
+        // Crescendo for the first 2 seconds
+        gainNode.gain.linearRampToValueAtTime(1, now + 2); 
+        // Hold for 2 seconds
+        gainNode.gain.setValueAtTime(1, now + 4); 
+        // Fade out in the last second
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        whiteNoiseSource.start(now);
+        whiteNoiseSource.stop(now + duration); // Stop after 5 seconds
+        
+        console.log("Drumroll playing...");
+        whiteNoiseSource.onended = () => {
+            console.log("Drumroll finished.");
+            // Disconnect nodes to free up resources
+            whiteNoiseSource.disconnect();
+            bandpass.disconnect();
+            gainNode.disconnect();
+        };
     }
     
     // Check the result
@@ -555,6 +611,13 @@ document.addEventListener('DOMContentLoaded', () => {
         //     utterance.pitch = 1.3;
         //     window.speechSynthesis.speak(utterance);
         // }, 1500); // Speech for win disabled
+
+        // Schedule the drumroll to play after the main celebration effects
+        setTimeout(() => {
+            if (audioInitialized && audioContext) { // Ensure audio is ready
+                playDrumrollSound();
+            }
+        }, 10000); // 10 seconds delay for current effects to mostly finish
     }
     
     // Show ice magic animation
@@ -970,4 +1033,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize the game
     initGame();
+
+    // Temporary test button for drumroll (can be removed later)
+    // const testDrumrollButton = document.createElement('button');
+    // testDrumrollButton.textContent = "Test Drumroll";
+    // testDrumrollButton.style.position = 'fixed';
+    // testDrumrollButton.style.bottom = '10px';
+    // testDrumrollButton.style.left = '10px';
+    // document.body.appendChild(testDrumrollButton);
+    // testDrumrollButton.addEventListener('click', () => {
+    //     if (!audioInitialized) initializeAudio();
+    //     playDrumrollSound();
+    // });
 });
