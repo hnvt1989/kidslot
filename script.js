@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Game state
     let isSpinning = false;
     let currentItems = Array(3).fill(null);
+    let slotIntervals = []; // To store interval IDs for each slot
     
     // Initialize the game
     function initGame() {
@@ -278,12 +279,23 @@ document.addEventListener('DOMContentLoaded', () => {
             spinningSound.muted = false;
             spinningSound.volume = 0.5;
             spinningSound.loop = true; // Make it loop while spinning
+            spinningSound.playbackRate = 0.8; // Start slower for "winding up" effect
             spinningSound.play().catch(err => console.log('Could not play spinning sound', err));
+            setTimeout(() => {
+                if (isSpinning && spinningSound && !spinningSound.paused) { // Check if still spinning and sound is playing
+                    spinningSound.playbackRate = 1.2; // Ramp up to a slightly faster speed
+                }
+            }, 200); // Adjust timing as needed
         }
         
-        // Add spinning class
-        slots.forEach(slot => {
+        // Add spinning class and start emoji cycling
+        slots.forEach((slot, i) => {
             slot.parentElement.classList.add('spinning');
+            // Start rapid emoji cycling
+            slotIntervals[i] = setInterval(() => {
+                const randomItem = items[Math.floor(Math.random() * items.length)];
+                slot.textContent = randomItem.emoji;
+            }, 75); // Adjust interval for speed, 75ms is a good starting point
         });
         
         // Set different timeouts for each slot
@@ -298,7 +310,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Stop each slot at different times
         slots.forEach((slot, index) => {
             setTimeout(() => {
-                // Stop spinning
+                // Stop the rapid cycling for this slot
+                clearInterval(slotIntervals[index]);
+                
+                // Stop spinning visual effect (like blur)
                 slot.parentElement.classList.remove('spinning');
                 
                 if (isWinningRound) {
@@ -336,11 +351,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Check if all slots have stopped
                 if (index === slots.length - 1) {
                     setTimeout(() => {
+                        // "Slowing down" effect for spinning sound
+                        if (spinningSound && !spinningSound.paused) {
+                            spinningSound.playbackRate = 0.8; // Start slowing down
+                            // Optional: A further step down if desired, e.g., after 100-150ms
+                            // setTimeout(() => { if (spinningSound && !spinningSound.paused) spinningSound.playbackRate = 0.6; }, 150);
+                        }
+
                         // Stop the spinning sound
                         if (spinningSound && spinningSound.pause) {
                             spinningSound.pause();
                             spinningSound.currentTime = 0;
                             spinningSound.loop = false;
+                            spinningSound.playbackRate = 1.0; // Reset playback rate for next spin
                         }
                         
                         checkResult();
@@ -704,8 +727,14 @@ document.addEventListener('DOMContentLoaded', () => {
     spinButton.addEventListener('click', spin);
     
     resetButton.addEventListener('click', () => {
+        playClickSound();
         // Reset game state and start fresh
         window.speechSynthesis.cancel(); // Cancel any ongoing speech
+        
+        // Clear any active spinning intervals
+        slotIntervals.forEach(clearInterval);
+        slotIntervals = [];
+
         isSpinning = false;
         spinButton.disabled = false;
         confettiContainer.classList.add('hidden');
@@ -742,6 +771,14 @@ document.addEventListener('DOMContentLoaded', () => {
             spinSound.muted = false;
             spinSound.volume = 0.5;
             spinSound.play().catch(err => console.log('Could not play spin sound', err));
+        }
+
+        // Ensure spinningSound is reset if it was playing
+        if (spinningSound) {
+            spinningSound.pause();
+            spinningSound.currentTime = 0;
+            spinningSound.loop = false;
+            spinningSound.playbackRate = 1.0;
         }
         
         // Add a fun "reset" speech
