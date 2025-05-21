@@ -62,9 +62,16 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     
     // Game state
-    let isSpinning = false;
-    let currentItems = Array(3).fill(null);
-    let slotIntervals = []; // To store interval IDs for each slot
+let isSpinning = false;
+let currentItems = Array(3).fill(null);
+let slotIntervals = []; // To store interval IDs for each slot
+
+    // Helper to re-enable the spin button after a delay
+    function releaseSpinButton(delay = 0) {
+        setTimeout(() => {
+            spinButton.disabled = false;
+        }, delay);
+    }
     
     // Initialize the game
     function initGame() {
@@ -348,12 +355,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Check if all slots have stopped
                 if (index === slots.length - 1) {
+                    // Brief pause before handling results
                     setTimeout(() => {
                         // "Slowing down" effect for spinning sound
                         if (spinningSound && !spinningSound.paused) {
-                            spinningSound.playbackRate = 0.8; // Start slowing down
-                            // Optional: A further step down if desired, e.g., after 100-150ms
-                            // setTimeout(() => { if (spinningSound && !spinningSound.paused) spinningSound.playbackRate = 0.6; }, 150);
+                            spinningSound.playbackRate = 0.8;
                         }
 
                         // Stop the spinning sound
@@ -361,77 +367,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             spinningSound.pause();
                             spinningSound.currentTime = 0;
                             spinningSound.loop = false;
-                            spinningSound.playbackRate = 1.0; // Reset playback rate for next spin
+                            spinningSound.playbackRate = 1.0;
                         }
-                        
+
                         checkResult();
                         isSpinning = false;
-                        
-                        // Keep buttons disabled for ~15.5 seconds after spin completes (to cover confetti + drumroll)
-                        setTimeout(() => {
-                            spinButton.disabled = false;
-                        }, 15500);
+                        // Spin button will be re-enabled by result handlers
                     }, 500);
                 }
             }, stopTimes[index]);
         });
     }
 
-    // Function to play a drumroll sound
-    function playDrumrollSound() {
-        if (!audioContext || !audioInitialized) return;
-
-        const now = audioContext.currentTime;
-        const duration = 5; // 5 seconds
-        const sampleRate = audioContext.sampleRate;
-        const bufferSize = sampleRate * duration;
-        const buffer = audioContext.createBuffer(1, bufferSize, sampleRate);
-        const output = buffer.getChannelData(0);
-
-        // Fill buffer with white noise
-        for (let i = 0; i < bufferSize; i++) {
-            output[i] = Math.random() * 2 - 1;
-        }
-
-        const whiteNoiseSource = audioContext.createBufferSource();
-        whiteNoiseSource.buffer = buffer;
-
-        // Create a bandpass filter to make it sound more like a snare drum roll
-        const bandpass = audioContext.createBiquadFilter();
-        bandpass.type = "bandpass";
-        bandpass.frequency.setValueAtTime(1500, now); // Center frequency, adjust for desired tone
-        bandpass.Q.setValueAtTime(1, now); // Quality factor
-
-        const gainNode = audioContext.createGain();
-        gainNode.gain.setValueAtTime(0, now); // Start silent
-
-        // Connect nodes: noise -> filter -> gain -> destination
-        whiteNoiseSource.connect(bandpass);
-        bandpass.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        // Drumroll envelope
-        // Quick attack
-        gainNode.gain.linearRampToValueAtTime(0.5, now + 0.1); 
-        // Crescendo for the first 2 seconds
-        gainNode.gain.linearRampToValueAtTime(1, now + 2); 
-        // Hold for 2 seconds
-        gainNode.gain.setValueAtTime(1, now + 4); 
-        // Fade out in the last second
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-        whiteNoiseSource.start(now);
-        whiteNoiseSource.stop(now + duration); // Stop after 5 seconds
-        
-        console.log("Drumroll playing...");
-        whiteNoiseSource.onended = () => {
-            console.log("Drumroll finished.");
-            // Disconnect nodes to free up resources
-            whiteNoiseSource.disconnect();
-            bandpass.disconnect();
-            gainNode.disconnect();
-        };
-    }
     
     // Check the result
     function checkResult() {
@@ -469,6 +416,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 utterance.pitch = 1.1;
                 // window.speechSynthesis.speak(utterance); // Near-miss speech disabled
             }, 300); // Delay to allow shake animation to be noticed
+            releaseSpinButton(1000);
+        } else {
+            // No win or near miss
+            releaseSpinButton(500);
         }
     }
 
@@ -510,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Function to play a magical win sound
-    function playMagicalWinSound() {
+function playMagicalWinSound() {
         if (!audioContext || !audioInitialized) return;
 
         const now = audioContext.currentTime;
@@ -541,6 +492,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
             osc.start(now + index * 0.1);
             osc.stop(now + index * 0.1 + 0.5);
+        });
+}
+
+    // Fun cheer/fanfare sound for kids
+    function playCheerSound() {
+        if (!audioContext || !audioInitialized) return;
+
+        const now = audioContext.currentTime;
+        const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+        notes.forEach((freq, index) => {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, now + index * 0.25);
+
+            gain.gain.setValueAtTime(0.15, now + index * 0.25);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.25 + 0.4);
+
+            osc.start(now + index * 0.25);
+            osc.stop(now + index * 0.25 + 0.4);
         });
     }
 
@@ -609,12 +584,16 @@ document.addEventListener('DOMContentLoaded', () => {
         //     window.speechSynthesis.speak(utterance);
         // }, 1500); // Speech for win disabled
 
-        // Schedule the drumroll to play after the main celebration effects
+        // Play a cheerful fanfare after the main celebration effects
         setTimeout(() => {
-            if (audioInitialized && audioContext) { // Ensure audio is ready
-                playDrumrollSound();
+            if (audioInitialized && audioContext) {
+                playCheerSound();
             }
-        }, 10000); // 10 seconds delay for current effects to mostly finish
+            // Re-enable the spin button once all celebration sounds are done
+            setTimeout(() => {
+                spinButton.disabled = false;
+            }, 2000);
+        }, 1000); // short delay so confetti is visible first
     }
     
     // Show ice magic animation
@@ -916,15 +895,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize the game
     initGame();
 
-    // Temporary test button for drumroll (can be removed later)
-    // const testDrumrollButton = document.createElement('button');
-    // testDrumrollButton.textContent = "Test Drumroll";
-    // testDrumrollButton.style.position = 'fixed';
-    // testDrumrollButton.style.bottom = '10px';
-    // testDrumrollButton.style.left = '10px';
-    // document.body.appendChild(testDrumrollButton);
-    // testDrumrollButton.addEventListener('click', () => {
-    //     if (!audioInitialized) initializeAudio();
-    //     playDrumrollSound();
-    // });
 });
